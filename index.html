@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VEXA Mining</title>
+  <style>
+    body{
+      background:#0b0f1a;
+      color:white;
+      font-family:Arial;
+      text-align:center;
+      padding-top:60px;
+    }
+    .box{
+      background:#121a2b;
+      padding:25px;
+      width:300px;
+      margin:auto;
+      border-radius:15px;
+      box-shadow:0 0 20px #000;
+    }
+    button{
+      padding:15px;
+      border:none;
+      border-radius:10px;
+      background:#00ffa6;
+      font-size:18px;
+      cursor:pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+<h2>VEXA COIN MINING</h2>
+<h3 id="balance">Balance: 0 VEXA</h3>
+
+<button onclick="mine()">Start Mining</button>
+
+<p id="msg"></p>
+</div>
+
+<script>
+
+let balance = localStorage.getItem("balance") || 0;
+document.getElementById("balance").innerText =
+"Balance: " + balance + " VEXA";
+
+function mine(){
+
+let last = localStorage.getItem("lastMine");
+let now = new Date().getTime();
+
+if(last && now - last < 86400000){
+document.getElementById("msg").innerText =
+"⏳ You already mined today. Come back later.";
+return;
+}
+
+balance = parseInt(balance) + 10;
+localStorage.setItem("balance", balance);
+localStorage.setItem("lastMine", now);
+
+document.getElementById("balance").innerText =
+"Balance: " + balance + " VEXA";
+
+document.getElementById("msg").innerText =
+"✅ Mining successful! +10 VEXA";
+}
+
+</script>
+
+</body>
+</html>
