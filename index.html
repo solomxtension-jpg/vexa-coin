@@ -1,104 +1,142 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VEXA Mining</title>
-  <style>
-    body{
-      background:#0b0f1a;
-      color:white;
-      font-family:Arial;
-      text-align:center;
-      padding-top:60px;
-    }
-    .box{
-      background:#121a2b;
-      padding:25px;
-      width:320px;
-      margin:auto;
-      border-radius:15px;
-      box-shadow:0 0 20px #000;
-    }
-    button{
-      padding:15px;
-      border:none;
-      border-radius:10px;
-      background:#00ffa6;
-      font-size:18px;
-      cursor:pointer;
-      width:100%;
-    }
-    #timer{
-      margin-top:15px;
-      font-size:14px;
-      color:#00ffa6;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>VEXA Coin Mining</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+    background:#0b0f1a;
+    color:white;
+    font-family:Arial;
+    text-align:center;
+    padding-top:50px;
+}
+
+.container{
+    width:320px;
+    margin:auto;
+    background:#141b2d;
+    padding:25px;
+    border-radius:15px;
+    box-shadow:0 0 25px #000;
+}
+
+input{
+    width:90%;
+    padding:10px;
+    margin:10px;
+    border-radius:8px;
+    border:none;
+}
+
+button{
+    padding:12px 20px;
+    background:#6c5cff;
+    border:none;
+    color:white;
+    border-radius:10px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#5748d6;
+}
+
+.balance{
+    font-size:22px;
+    margin:20px;
+}
+</style>
 </head>
 
 <body>
 
-<div class="box">
-<h2>VEXA COIN MINING</h2>
-<h3 id="balance">Balance: 0 VEXA</h3>
+<div class="container" id="loginBox">
+<h2>VEXA Coin</h2>
+<p>Create Username</p>
+<input id="username" placeholder="Enter username">
+<br>
+<button onclick="login()">Enter Mining</button>
+</div>
 
+<div class="container" id="mineBox" style="display:none;">
+<h2>VEXA Mining</h2>
+<div class="balance" id="balance">Balance: 0 VEXA</div>
 <button onclick="mine()">Start Mining</button>
-
-<p id="timer"></p>
-<p id="msg"></p>
 </div>
 
 <script>
+const supabase = window.supabase.createClient(
+"https://qmcjmnugpujsqabqejpx.supabase.co",
+"sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq"
+);
 
-let balance = localStorage.getItem("balance") || 0;
-document.getElementById("balance").innerText =
-"Balance: " + balance + " VEXA";
+let currentUser = null;
+let currentBalance = 0;
 
-let lastMine = localStorage.getItem("lastMine");
+async function login(){
+    const username = document.getElementById("username").value;
 
-function updateTimer(){
-  if(!lastMine) return;
+    if(!username){
+        alert("Enter username");
+        return;
+    }
 
-  let now = new Date().getTime();
-  let distance = 86400000 - (now - lastMine);
+    let { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .single();
 
-  if(distance <= 0){
-    document.getElementById("timer").innerText = "You can mine now!";
-    return;
-  }
+    if(!data){
+        const { data:newUser } = await supabase
+        .from('users')
+        .insert([{ username:username, balance:0 }])
+        .select()
+        .single();
 
-  let hours = Math.floor(distance / (1000 * 60 * 60));
-  let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-  let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        currentUser = newUser;
+        currentBalance = 0;
+    }else{
+        currentUser = data;
+        currentBalance = data.balance;
+    }
 
-  document.getElementById("timer").innerText =
-  "Next mining in: " + hours + "h " + minutes + "m " + seconds + "s";
+    document.getElementById("loginBox").style.display="none";
+    document.getElementById("mineBox").style.display="block";
+    updateBalance();
 }
 
-setInterval(updateTimer, 1000);
-updateTimer();
-
-function mine(){
-
-  let now = new Date().getTime();
-
-  if(lastMine && now - lastMine < 86400000){
-    document.getElementById("msg").innerText =
-    "⏳ You already mined today.";
-    return;
-  }
-
-  balance = parseInt(balance) + 10;
-  localStorage.setItem("balance", balance);
-  localStorage.setItem("lastMine", now);
-  lastMine = now;
-
-  document.getElementById("balance").innerText =
-  "Balance: " + balance + " VEXA";
-
-  document.getElementById("msg").innerText =
-  "✅ Mining successful! +10 VEXA";
+function updateBalance(){
+    document.getElementById("balance").innerText = "Balance: "+currentBalance+" VEXA";
 }
 
+async function mine(){
+
+    const now = new Date();
+    const lastMine = currentUser.last_mine ? new Date(currentUser.last_mine) : null;
+
+    if(lastMine && (now - lastMine) < 3600000){
+        alert("You can mine once every 1 hour");
+        return;
+    }
+
+    currentBalance += 5;
+
+    await supabase
+    .from('users')
+    .update({
+        balance: currentBalance,
+        last_mine: now.toISOString()
+    })
+    .eq('id', currentUser.id);
+
+    updateBalance();
+}
 </script>
 
 </body>
