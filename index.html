@@ -2,140 +2,113 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VEXA Coin Mining</title>
+<title>VEXA Mining</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body{
-    background:#0b0f1a;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-    padding-top:50px;
+background:#0b0f1a;
+color:white;
+font-family:Arial;
+text-align:center;
+padding-top:60px;
 }
 
-.container{
-    width:320px;
-    margin:auto;
-    background:#141b2d;
-    padding:25px;
-    border-radius:15px;
-    box-shadow:0 0 25px #000;
-}
-
-input{
-    width:90%;
-    padding:10px;
-    margin:10px;
-    border-radius:8px;
-    border:none;
+.card{
+background:#11182b;
+padding:30px;
+border-radius:15px;
+width:320px;
+margin:auto;
+box-shadow:0 0 20px #00f0ff33;
 }
 
 button{
-    padding:12px 20px;
-    background:#6c5cff;
-    border:none;
-    color:white;
-    border-radius:10px;
-    font-size:16px;
-    cursor:pointer;
+background:#00e5ff;
+color:black;
+border:none;
+padding:12px 20px;
+border-radius:10px;
+font-weight:bold;
+margin-top:15px;
+cursor:pointer;
 }
 
-button:hover{
-    background:#5748d6;
-}
-
-.balance{
-    font-size:22px;
-    margin:20px;
+input{
+padding:10px;
+border-radius:8px;
+border:none;
+width:80%;
+margin-bottom:10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container" id="loginBox">
-<h2>VEXA Coin</h2>
-<p>Create Username</p>
-<input id="username" placeholder="Enter username">
-<br>
-<button onclick="login()">Enter Mining</button>
-</div>
+<div class="card">
 
-<div class="container" id="mineBox" style="display:none;">
-<h2>VEXA Mining</h2>
-<div class="balance" id="balance">Balance: 0 VEXA</div>
-<button onclick="mine()">Start Mining</button>
+<h2>VEXA COIN MINING</h2>
+
+<input id="username" placeholder="Enter Username">
+
+<h3 id="balance">Balance: 0 VEXA</h3>
+
+<button onclick="startMining()">Start Mining</button>
+
 </div>
 
 <script>
 const supabase = window.supabase.createClient(
-"https://qmcjmnugpujsqabqejpx.supabase.co",
-"sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq"
-);
+'https://qmcjmnugpujsqabqejpx.supabase.co',
+'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
+)
 
+let mining = false;
 let currentUser = null;
-let currentBalance = 0;
 
-async function login(){
-    const username = document.getElementById("username").value;
+async function startMining(){
 
-    if(!username){
-        alert("Enter username");
-        return;
-    }
+currentUser = document.getElementById("username").value;
 
-    let { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('username', username)
-        .single();
-
-    if(!data){
-        const { data:newUser } = await supabase
-        .from('users')
-        .insert([{ username:username, balance:0 }])
-        .select()
-        .single();
-
-        currentUser = newUser;
-        currentBalance = 0;
-    }else{
-        currentUser = data;
-        currentBalance = data.balance;
-    }
-
-    document.getElementById("loginBox").style.display="none";
-    document.getElementById("mineBox").style.display="block";
-    updateBalance();
+if(!currentUser){
+alert("Enter username first");
+return;
 }
 
-function updateBalance(){
-    document.getElementById("balance").innerText = "Balance: "+currentBalance+" VEXA";
+mining = true;
+
+setInterval(async () => {
+
+if(!mining) return;
+
+let { data } = await supabase
+.from('users')
+.select('*')
+.eq('username', currentUser)
+.single();
+
+if(!data){
+await supabase.from('users').insert({
+username: currentUser,
+balance: 0
+});
+return;
 }
 
-async function mine(){
+let newBalance = data.balance + 1;
 
-    const now = new Date();
-    const lastMine = currentUser.last_mine ? new Date(currentUser.last_mine) : null;
+await supabase
+.from('users')
+.update({ balance: newBalance })
+.eq('username', currentUser);
 
-    if(lastMine && (now - lastMine) < 3600000){
-        alert("You can mine once every 1 hour");
-        return;
-    }
+document.getElementById("balance").innerText =
+"Balance: " + newBalance + " VEXA";
 
-    currentBalance += 5;
+}, 5000);
 
-    await supabase
-    .from('users')
-    .update({
-        balance: currentBalance,
-        last_mine: now.toISOString()
-    })
-    .eq('id', currentUser.id);
-
-    updateBalance();
 }
 </script>
 
