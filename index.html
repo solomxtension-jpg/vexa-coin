@@ -68,7 +68,24 @@ const supabaseClient = window.supabase.createClient(
 let mining = false;
 
 async function startMining(){
+async function loadBalance(){
 
+const username = document.getElementById("username").value;
+
+if(!username) return;
+
+let { data } = await supabaseClient
+.from('users')
+.select('*')
+.eq('username', username)
+.single();
+
+if(data){
+document.getElementById("balance").innerText =
+"Balance: " + data.balance + " VEXA";
+}
+
+}
 const username = document.getElementById("username").value;
 
 if(!username){
