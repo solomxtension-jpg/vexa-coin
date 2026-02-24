@@ -4,43 +4,44 @@
 <meta charset="UTF-8">
 <title>VEXA Mining</title>
 
+<!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 body{
-background:#0b0f1a;
-color:white;
-font-family:Arial;
-text-align:center;
-padding-top:60px;
+  background:#0b0f1a;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  padding-top:60px;
 }
 
 .card{
-background:#11182b;
-padding:30px;
-border-radius:15px;
-width:320px;
-margin:auto;
-box-shadow:0 0 20px #00f0ff33;
+  background:#11182b;
+  padding:30px;
+  border-radius:15px;
+  width:320px;
+  margin:auto;
+  box-shadow:0 0 20px #00f0ff33;
 }
 
 button{
-background:#00e5ff;
-color:black;
-border:none;
-padding:12px 20px;
-border-radius:10px;
-font-weight:bold;
-margin-top:15px;
-cursor:pointer;
+  background:#00e5ff;
+  color:black;
+  border:none;
+  padding:12px 20px;
+  border-radius:10px;
+  font-weight:bold;
+  margin-top:15px;
+  cursor:pointer;
 }
 
 input{
-padding:10px;
-border-radius:8px;
-border:none;
-width:80%;
-margin-bottom:10px;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  width:80%;
+  margin-bottom:10px;
 }
 </style>
 </head>
@@ -51,7 +52,7 @@ margin-bottom:10px;
 
 <h2>VEXA COIN MINING</h2>
 
-<input id="username" placeholder="Enter Username">
+<input id="username" placeholder="Enter Username" onkeyup="loadBalance()">
 
 <h3 id="balance">Balance: 0 VEXA</h3>
 
@@ -60,68 +61,84 @@ margin-bottom:10px;
 </div>
 
 <script>
+// -------------------- Supabase connection --------------------
 const supabaseClient = window.supabase.createClient(
-'https://qmcjmnugpujsqabqejpx.supabase.co',
-'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
+  'https://qmcjmnugpujsqabqejpx.supabase.co',
+  'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
 );
 
+// -------------------- Global variables --------------------
 let mining = false;
+let miningInterval;
 
-async function startMining(){
-async function loadBalance(){
+// -------------------- Auto-load balance --------------------
+async function loadBalance() {
+  const username = document.getElementById("username").value;
+  if (!username) return;
 
-const username = document.getElementById("username").value;
+  let { data } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .single();
 
-if(!username) return;
-
-let { data } = await supabaseClient
-.from('users')
-.select('*')
-.eq('username', username)
-.single();
-
-if(data){
-document.getElementById("balance").innerText =
-"Balance: " + data.balance + " VEXA";
+  if (data) {
+    document.getElementById("balance").innerText =
+      "Balance: " + data.balance + " VEXA";
+  } else {
+    document.getElementById("balance").innerText = "Balance: 0 VEXA";
+  }
 }
 
-}
-const username = document.getElementById("username").value;
+// -------------------- Mining function --------------------
+async function startMining() {
+  const username = document.getElementById("username").value;
+  if (!username) {
+    alert("Enter username first");
+    return;
+  }
 
-if(!username){
-alert("Enter username first");
-return;
-}
+  // Load current balance immediately
+  let { data } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .single();
 
-mining = true;
+  if (!data) {
+    await supabaseClient.from('users').insert({
+      username: username,
+      balance: 0
+    });
+    data = { balance: 0 };
+  }
 
-setInterval(async () => {
+  document.getElementById("balance").innerText =
+    "Balance: " + data.balance + " VEXA";
 
-let { data } = await supabaseClient
-.from('users')
-.select('*')
-.eq('username', username)
-.single();
+  if (mining) return; // prevent multiple clicks
+  mining = true;
 
-if(!data){
-await supabaseClient.from('users').insert({
-username: username,
-balance: 0
-});
-return;
-}
+  miningInterval = setInterval(async () => {
+    let { data } = await supabaseClient
+      .from('users')
+      .select('*')
+      .eq('username', username)
+      .single();
 
-let newBalance = data.balance + 1;
+    if (data) {
+      let newBalance = data.balance + 1;
 
-await supabaseClient
-.from('users')
-.update({ balance: newBalance })
-.eq('username', username);
+      await supabaseClient
+        .from('users')
+        .update({ balance: newBalance })
+        .eq('username', username);
 
-document.getElementById("balance").innerText =
-"Balance: " + newBalance + " VEXA";
+      document.getElementById("balance").innerText =
+        "Balance: " + newBalance + " VEXA";
+    }
 
-}, 5000);
+  }, 5000); // mines every 5 seconds
 }
 </script>
 
