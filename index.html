@@ -60,19 +60,18 @@ margin-bottom:10px;
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
+const supabaseClient = window.supabase.createClient(
 'https://qmcjmnugpujsqabqejpx.supabase.co',
 'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
-)
+);
 
 let mining = false;
-let currentUser = null;
 
 async function startMining(){
 
-currentUser = document.getElementById("username").value;
+const username = document.getElementById("username").value;
 
-if(!currentUser){
+if(!username){
 alert("Enter username first");
 return;
 }
@@ -81,17 +80,15 @@ mining = true;
 
 setInterval(async () => {
 
-if(!mining) return;
-
-let { data } = await supabase
+let { data } = await supabaseClient
 .from('users')
 .select('*')
-.eq('username', currentUser)
+.eq('username', username)
 .single();
 
 if(!data){
-await supabase.from('users').insert({
-username: currentUser,
+await supabaseClient.from('users').insert({
+username: username,
 balance: 0
 });
 return;
@@ -99,19 +96,17 @@ return;
 
 let newBalance = data.balance + 1;
 
-await supabase
+await supabaseClient
 .from('users')
 .update({ balance: newBalance })
-.eq('username', currentUser);
+.eq('username', username);
 
 document.getElementById("balance").innerText =
 "Balance: " + newBalance + " VEXA";
 
 }, 5000);
-
 }
 </script>
 
 </body>
 </html>
-connect mining system
