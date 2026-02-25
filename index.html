@@ -5,6 +5,16 @@
 <title>VEXA Mining PRO</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/service-worker.js')
+  .then(()=>console.log('Service Worker Registered'))
+  .catch(err=>console.log(err));
+}
+</script>
+
 <style>
 body{
   background:#0b0f1a;
@@ -38,6 +48,7 @@ button{
   margin-top:8px;
   cursor:pointer;
 }
+hr{margin:15px 0;}
 </style>
 </head>
 
@@ -47,6 +58,7 @@ button{
 
 <h2>VEXA Mining PRO</h2>
 
+<!-- Authentication Section -->
 <div id="authSection">
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
@@ -54,6 +66,7 @@ button{
 <button onclick="login()">Login</button>
 </div>
 
+<!-- App Section -->
 <div id="appSection" style="display:none;">
 <h3 id="balance">Balance: 0 VEXA</h3>
 <h4 id="level">Level: 1</h4>
@@ -63,6 +76,7 @@ button{
 
 <hr>
 
+<h4>Withdraw</h4>
 <input id="withdrawAmount" placeholder="Amount to withdraw">
 <input id="walletAddress" placeholder="Wallet address">
 <button onclick="withdraw()">Request Withdrawal</button>
@@ -74,7 +88,7 @@ button{
 </div>
 
 <script>
-
+// Supabase client
 const supabaseClient = window.supabase.createClient(
   'https://qmcjmnugpujsqabqejpx.supabase.co',
   'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
@@ -83,22 +97,23 @@ const supabaseClient = window.supabase.createClient(
 let currentUser = null;
 let miningInterval;
 
+// Sign Up
 async function signUp(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
   const { error } = await supabaseClient.auth.signUp({ email, password });
-
   if(error){ alert(error.message); return; }
-  alert("Check email to confirm.");
+
+  alert("Check your email to confirm account.");
 }
 
+// Login
 async function login(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
   if(error){ alert(error.message); return; }
 
   currentUser = data.user;
@@ -109,8 +124,8 @@ async function login(){
   loadUser();
 }
 
+// Load User Data
 async function loadUser(){
-
   let { data } = await supabaseClient
     .from('users')
     .select('*')
@@ -123,18 +138,15 @@ async function loadUser(){
       balance: 0,
       level: 1
     });
-
     document.getElementById("balance").innerText = "Balance: 0 VEXA";
     document.getElementById("level").innerText = "Level: 1";
-  }else{
-    document.getElementById("balance").innerText =
-      "Balance: " + data.balance + " VEXA";
-
-    document.getElementById("level").innerText =
-      "Level: " + data.level;
+  } else {
+    document.getElementById("balance").innerText = "Balance: " + data.balance + " VEXA";
+    document.getElementById("level").innerText = "Level: " + data.level;
   }
 }
 
+// Start Mining
 async function startMining(){
   if(miningInterval) return;
 
@@ -144,13 +156,14 @@ async function startMining(){
   }, 5000);
 }
 
+// Upgrade Miner
 async function upgrade(){
   await supabaseClient.rpc('upgrade_miner', { uid: currentUser.id });
   loadUser();
 }
 
+// Withdraw Request
 async function withdraw(){
-
   const amount = parseInt(document.getElementById("withdrawAmount").value);
   const wallet = document.getElementById("walletAddress").value;
 
@@ -169,6 +182,7 @@ async function withdraw(){
   loadUser();
 }
 
+// Logout
 async function logout(){
   await supabaseClient.auth.signOut();
   location.reload();
