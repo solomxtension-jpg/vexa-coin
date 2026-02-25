@@ -2,9 +2,8 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VEXA Mining</title>
+<title>VEXA Mining PRO</title>
 
-<!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -13,15 +12,16 @@ body{
   color:white;
   font-family:Arial;
   text-align:center;
-  padding-top:60px;
+  padding-top:30px;
 }
 
 .card{
   background:#11182b;
   padding:30px;
   border-radius:15px;
-  width:320px;
+  width:360px;
   margin:auto;
+  margin-bottom:20px;
   box-shadow:0 0 20px #00f0ff33;
 }
 
@@ -29,10 +29,10 @@ button{
   background:#00e5ff;
   color:black;
   border:none;
-  padding:12px 20px;
+  padding:10px 18px;
   border-radius:10px;
   font-weight:bold;
-  margin-top:15px;
+  margin-top:10px;
   cursor:pointer;
 }
 
@@ -43,25 +43,33 @@ input{
   width:80%;
   margin-bottom:10px;
 }
+
+h3,h4{margin:10px 0;}
+#leaderboard {text-align:left; margin:10px auto; max-width:360px;}
 </style>
 </head>
 
 <body>
 
 <div class="card">
-
-<h2>VEXA COIN MINING</h2>
+<h2>VEXA COIN MINING PRO</h2>
 
 <input id="username" placeholder="Enter Username" onkeyup="loadBalance()">
 
 <h3 id="balance">Balance: 0 VEXA</h3>
 
 <button onclick="startMining()">Start Mining</button>
+<button onclick="claimDailyReward()">Claim Daily Reward</button>
+<button onclick="toggleBoost()">Toggle Speed Boost</button>
+</div>
 
+<div class="card" id="leaderboard">
+<h4>Leaderboard</h4>
+<ul id="leaderboardList"></ul>
 </div>
 
 <script>
-// -------------------- Supabase connection --------------------
+// -------------------- Supabase --------------------
 const supabaseClient = window.supabase.createClient(
   'https://qmcjmnugpujsqabqejpx.supabase.co',
   'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
@@ -70,6 +78,7 @@ const supabaseClient = window.supabase.createClient(
 // -------------------- Global variables --------------------
 let mining = false;
 let miningInterval;
+let boost = false;
 
 // -------------------- Auto-load balance --------------------
 async function loadBalance() {
@@ -88,17 +97,16 @@ async function loadBalance() {
   } else {
     document.getElementById("balance").innerText = "Balance: 0 VEXA";
   }
+
+  updateLeaderboard();
 }
 
 // -------------------- Mining function --------------------
 async function startMining() {
   const username = document.getElementById("username").value;
-  if (!username) {
-    alert("Enter username first");
-    return;
-  }
+  if (!username) { alert("Enter username first"); return; }
 
-  // Load current balance immediately
+  // Load current balance
   let { data } = await supabaseClient
     .from('users')
     .select('*')
@@ -108,15 +116,16 @@ async function startMining() {
   if (!data) {
     await supabaseClient.from('users').insert({
       username: username,
-      balance: 0
+      balance: 0,
+      last_daily: null
     });
-    data = { balance: 0 };
+    data = { balance:0, last_daily:null };
   }
 
   document.getElementById("balance").innerText =
     "Balance: " + data.balance + " VEXA";
 
-  if (mining) return; // prevent multiple clicks
+  if (mining) return;
   mining = true;
 
   miningInterval = setInterval(async () => {
@@ -127,7 +136,8 @@ async function startMining() {
       .single();
 
     if (data) {
-      let newBalance = data.balance + 1;
+      let increment = boost ? 3 : 1; // boost multiplies mining
+      let newBalance = data.balance + increment;
 
       await supabaseClient
         .from('users')
@@ -136,11 +146,74 @@ async function startMining() {
 
       document.getElementById("balance").innerText =
         "Balance: " + newBalance + " VEXA";
+
+      updateLeaderboard();
     }
-
-  }, 5000); // mines every 5 seconds
+  }, boost ? 2000 : 5000); // faster if boost
 }
-</script>
 
+// -------------------- Daily reward --------------------
+async function claimDailyReward() {
+  const username = document.getElementById("username").value;
+  if (!username) { alert("Enter username first"); return; }
+
+  let { data } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .single();
+
+  if (!data) { alert("User not found"); return; }
+
+  let lastDaily = data.last_daily ? new Date(data.last_daily) : null;
+  let now = new Date();
+
+  if (lastDaily && lastDaily.toDateString() === now.toDateString()) {
+    alert("You already claimed your daily reward today!");
+    return;
+  }
+
+  let reward = 10; // daily VEXA bonus
+  let newBalance = data.balance + reward;
+
+  await supabaseClient
+    .from('users')
+    .update({ balance: newBalance, last_daily: now })
+    .eq('username', username);
+
+  document.getElementById("balance").innerText =
+    "Balance: " + newBalance + " VEXA";
+
+  alert("Daily reward claimed: +" + reward + " VEXA");
+  updateLeaderboard();
+}
+
+// -------------------- Mining speed boost toggle --------------------
+function toggleBoost() {
+  boost = !boost;
+  clearInterval(miningInterval);
+  mining = false;
+  startMining();
+  alert(boost ? "Speed Boost Activated!" : "Speed Boost Deactivated!");
+}
+
+// -------------------- Leaderboard --------------------
+async function updateLeaderboard() {
+  let { data } = await supabaseClient
+    .from('users')
+    .select('*')
+    .order('balance', { ascending: false })
+    .limit(5);
+
+  let list = document.getElementById("leaderboardList");
+  list.innerHTML = "";
+  if(data){
+    data.forEach((user, index) => {
+      list.innerHTML += `<li>${index+1}. ${user.username} - ${user.balance} VEXA</li>`;
+    });
+  }
+}
+
+</script>
 </body>
 </html>
