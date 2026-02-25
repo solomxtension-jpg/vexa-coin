@@ -128,23 +128,15 @@ async function loadBalance(){
 
 async function startMining(){
 
+  if(miningInterval) return;
+
   miningInterval = setInterval(async () => {
 
-    let { data } = await supabaseClient
-      .from('users')
-      .select('*')
-      .eq('username', currentUser.id)
-      .single();
+    await supabaseClient.rpc('mine_coin', {
+      uid: currentUser.id
+    });
 
-    let newBalance = data.balance + 1;
-
-    await supabaseClient
-      .from('users')
-      .update({ balance: newBalance })
-      .eq('username', currentUser.id);
-
-    document.getElementById("balance").innerText =
-      "Balance: " + newBalance + " VEXA";
+    loadBalance();
 
   }, 5000);
 }
