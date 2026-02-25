@@ -57,8 +57,17 @@ button{
 <div id="appSection" style="display:none;">
 <h3 id="balance">Balance: 0 VEXA</h3>
 <h4 id="level">Level: 1</h4>
+
 <button onclick="startMining()">Start Mining</button>
 <button onclick="upgrade()">Upgrade Miner</button>
+
+<hr>
+
+<input id="withdrawAmount" placeholder="Amount to withdraw">
+<input id="walletAddress" placeholder="Wallet address">
+<button onclick="withdraw()">Request Withdrawal</button>
+
+<br><br>
 <button onclick="logout()">Logout</button>
 </div>
 
@@ -78,23 +87,17 @@ async function signUp(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const { error } = await supabaseClient.auth.signUp({
-    email,
-    password
-  });
+  const { error } = await supabaseClient.auth.signUp({ email, password });
 
   if(error){ alert(error.message); return; }
-  alert("Check your email to confirm.");
+  alert("Check email to confirm.");
 }
 
 async function login(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email,
-    password
-  });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
   if(error){ alert(error.message); return; }
 
@@ -133,26 +136,36 @@ async function loadUser(){
 }
 
 async function startMining(){
-
   if(miningInterval) return;
 
   miningInterval = setInterval(async () => {
-
-    await supabaseClient.rpc('mine_coin', {
-      uid: currentUser.id
-    });
-
+    await supabaseClient.rpc('mine_coin', { uid: currentUser.id });
     loadUser();
-
   }, 5000);
 }
 
 async function upgrade(){
+  await supabaseClient.rpc('upgrade_miner', { uid: currentUser.id });
+  loadUser();
+}
 
-  await supabaseClient.rpc('upgrade_miner', {
-    uid: currentUser.id
+async function withdraw(){
+
+  const amount = parseInt(document.getElementById("withdrawAmount").value);
+  const wallet = document.getElementById("walletAddress").value;
+
+  if(!amount || !wallet){
+    alert("Enter amount and wallet");
+    return;
+  }
+
+  await supabaseClient.rpc('request_withdraw', {
+    uid: currentUser.id,
+    amt: amount,
+    wallet_addr: wallet
   });
 
+  alert("Withdrawal request submitted.");
   loadUser();
 }
 
