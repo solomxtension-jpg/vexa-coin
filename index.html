@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VEXA Secure Mining</title>
+<title>VEXA Mining PRO</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -45,7 +45,7 @@ button{
 
 <div class="card">
 
-<h2>VEXA Secure Mining</h2>
+<h2>VEXA Mining PRO</h2>
 
 <div id="authSection">
 <input id="email" placeholder="Email">
@@ -56,7 +56,9 @@ button{
 
 <div id="appSection" style="display:none;">
 <h3 id="balance">Balance: 0 VEXA</h3>
+<h4 id="level">Level: 1</h4>
 <button onclick="startMining()">Start Mining</button>
+<button onclick="upgrade()">Upgrade Miner</button>
 <button onclick="logout()">Logout</button>
 </div>
 
@@ -76,14 +78,13 @@ async function signUp(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    email: email,
-    password: password
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password
   });
 
   if(error){ alert(error.message); return; }
-
-  alert("Check your email to confirm account.");
+  alert("Check your email to confirm.");
 }
 
 async function login(){
@@ -91,8 +92,8 @@ async function login(){
   const password = document.getElementById("password").value;
 
   const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
+    email,
+    password
   });
 
   if(error){ alert(error.message); return; }
@@ -102,10 +103,10 @@ async function login(){
   document.getElementById("authSection").style.display="none";
   document.getElementById("appSection").style.display="block";
 
-  loadBalance();
+  loadUser();
 }
 
-async function loadBalance(){
+async function loadUser(){
 
   let { data } = await supabaseClient
     .from('users')
@@ -116,13 +117,18 @@ async function loadBalance(){
   if(!data){
     await supabaseClient.from('users').insert({
       username: currentUser.id,
-      balance: 0
+      balance: 0,
+      level: 1
     });
-    document.getElementById("balance").innerText =
-      "Balance: 0 VEXA";
+
+    document.getElementById("balance").innerText = "Balance: 0 VEXA";
+    document.getElementById("level").innerText = "Level: 1";
   }else{
     document.getElementById("balance").innerText =
       "Balance: " + data.balance + " VEXA";
+
+    document.getElementById("level").innerText =
+      "Level: " + data.level;
   }
 }
 
@@ -136,9 +142,18 @@ async function startMining(){
       uid: currentUser.id
     });
 
-    loadBalance();
+    loadUser();
 
   }, 5000);
+}
+
+async function upgrade(){
+
+  await supabaseClient.rpc('upgrade_miner', {
+    uid: currentUser.id
+  });
+
+  loadUser();
 }
 
 async function logout(){
