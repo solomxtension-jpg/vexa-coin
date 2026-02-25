@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VEXA Mining PRO+</title>
+<title>VEXA Secure Mining</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -11,16 +11,22 @@ body{
   color:white;
   font-family:Arial;
   text-align:center;
-  padding-top:20px;
+  padding-top:40px;
 }
 .card{
   background:#11182b;
   padding:25px;
   border-radius:15px;
-  width:370px;
+  width:350px;
   margin:auto;
-  margin-bottom:20px;
   box-shadow:0 0 20px #00f0ff33;
+}
+input{
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  width:85%;
+  margin-bottom:10px;
 }
 button{
   background:#00e5ff;
@@ -32,14 +38,6 @@ button{
   margin-top:8px;
   cursor:pointer;
 }
-input{
-  padding:10px;
-  border-radius:8px;
-  border:none;
-  width:85%;
-  margin-bottom:8px;
-}
-hr{margin:15px 0;}
 </style>
 </head>
 
@@ -47,22 +45,20 @@ hr{margin:15px 0;}
 
 <div class="card">
 
-<h2>VEXA COIN MINING PRO+</h2>
+<h2>VEXA Secure Mining</h2>
 
-<input id="username" placeholder="Enter Username" onkeyup="loadBalance()">
-<input id="referral" placeholder="Referral Username (optional)">
+<div id="authSection">
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="signUp()">Sign Up</button>
+<button onclick="login()">Login</button>
+</div>
 
+<div id="appSection" style="display:none;">
 <h3 id="balance">Balance: 0 VEXA</h3>
-
 <button onclick="startMining()">Start Mining</button>
-<button onclick="claimDailyReward()">Claim Daily Reward</button>
-
-<hr>
-
-<h4>Withdraw</h4>
-<input id="withdrawAmount" placeholder="Amount (min 50)">
-<input id="walletAddress" placeholder="Wallet Address">
-<button onclick="withdrawCoins()">Withdraw</button>
+<button onclick="logout()">Logout</button>
+</div>
 
 </div>
 
@@ -73,20 +69,58 @@ const supabaseClient = window.supabase.createClient(
   'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
 );
 
-let mining = false;
+let currentUser = null;
 let miningInterval;
 
+async function signUp(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabaseClient.auth.signUp({
+    email: email,
+    password: password
+  });
+
+  if(error){ alert(error.message); return; }
+
+  alert("Check your email to confirm account.");
+}
+
+async function login(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if(error){ alert(error.message); return; }
+
+  currentUser = data.user;
+
+  document.getElementById("authSection").style.display="none";
+  document.getElementById("appSection").style.display="block";
+
+  loadBalance();
+}
+
 async function loadBalance(){
-  const username = document.getElementById("username").value;
-  if(!username) return;
 
   let { data } = await supabaseClient
     .from('users')
     .select('*')
-    .eq('username', username)
+    .eq('username', currentUser.id)
     .single();
 
-  if(data){
+  if(!data){
+    await supabaseClient.from('users').insert({
+      username: currentUser.id,
+      balance: 0
+    });
+    document.getElementById("balance").innerText =
+      "Balance: 0 VEXA";
+  }else{
     document.getElementById("balance").innerText =
       "Balance: " + data.balance + " VEXA";
   }
@@ -94,122 +128,33 @@ async function loadBalance(){
 
 async function startMining(){
 
-  const username = document.getElementById("username").value;
-  const referral = document.getElementById("referral").value;
-
-  if(!username){ alert("Enter username"); return; }
-
-  let { data } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('username', username)
-    .single();
-
-  // If new user
-  if(!data){
-
-    await supabaseClient.from('users').insert({
-      username: username,
-      balance: 5, // signup bonus
-      referred_by: referral || null
-    });
-
-    // Give referrer bonus
-    if(referral){
-      let { data: refUser } = await supabaseClient
-        .from('users')
-        .select('*')
-        .eq('username', referral)
-        .single();
-
-      if(refUser){
-        await supabaseClient
-          .from('users')
-          .update({ balance: refUser.balance + 5 })
-          .eq('username', referral);
-      }
-    }
-
-    data = { balance: 5 };
-  }
-
-  document.getElementById("balance").innerText =
-    "Balance: " + data.balance + " VEXA";
-
-  if(mining) return;
-  mining = true;
-
   miningInterval = setInterval(async () => {
 
     let { data } = await supabaseClient
       .from('users')
       .select('*')
-      .eq('username', username)
+      .eq('username', currentUser.id)
       .single();
 
-    if(data){
-      let newBalance = data.balance + 1;
+    let newBalance = data.balance + 1;
 
-      await supabaseClient
-        .from('users')
-        .update({ balance: newBalance })
-        .eq('username', username);
+    await supabaseClient
+      .from('users')
+      .update({ balance: newBalance })
+      .eq('username', currentUser.id);
 
-      document.getElementById("balance").innerText =
-        "Balance: " + newBalance + " VEXA";
-    }
+    document.getElementById("balance").innerText =
+      "Balance: " + newBalance + " VEXA";
 
   }, 5000);
 }
 
-async function claimDailyReward(){
-  alert("Daily reward system already active in previous version.");
-}
-
-async function withdrawCoins(){
-
-  const username = document.getElementById("username").value;
-  const amount = parseInt(document.getElementById("withdrawAmount").value);
-  const wallet = document.getElementById("walletAddress").value;
-
-  if(!username || !amount || !wallet){
-    alert("Fill all fields");
-    return;
-  }
-
-  let { data } = await supabaseClient
-    .from('users')
-    .select('*')
-    .eq('username', username)
-    .single();
-
-  if(data.balance < amount){
-    alert("Not enough balance");
-    return;
-  }
-
-  let newBalance = data.balance - amount;
-
-  await supabaseClient
-    .from('users')
-    .update({ balance: newBalance })
-    .eq('username', username);
-
-  await supabaseClient
-    .from('withdrawals')
-    .insert({
-      username: username,
-      amount: amount,
-      wallet: wallet,
-      status: "pending"
-    });
-
-  document.getElementById("balance").innerText =
-    "Balance: " + newBalance + " VEXA";
-
-  alert("Withdrawal request sent!");
+async function logout(){
+  await supabaseClient.auth.signOut();
+  location.reload();
 }
 
 </script>
+
 </body>
 </html>
