@@ -1,94 +1,194 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VEXA Miner</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; background: #1a1a1a; color: #fff; }
-    h1 { color: #00ffea; }
-    #coins { font-size: 2rem; margin: 1rem 0; }
-    button { padding: 1rem 2rem; font-size: 1rem; margin-top: 1rem; cursor: pointer; background: #00ffea; border: none; border-radius: 8px; color: #000; }
-    button:disabled { background: #555; cursor: not-allowed; }
-    #message { margin-top: 1rem; font-size: 1rem; color: #ffea00; }
-  </style>
+<meta charset="UTF-8">
+<title>VEXA Mining PRO</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/service-worker.js')
+  .then(()=>console.log('Service Worker Registered'))
+  .catch(err=>console.log(err));
+}
+</script>
+
+<style>
+body{
+  background:#0b0f1a;
+  color:white;
+  font-family:Arial;
+  text-align:center;
+  padding-top:40px;
+}
+.card{
+  background:#11182b;
+  padding:25px;
+  border-radius:15px;
+  width:350px;
+  margin:auto;
+  box-shadow:0 0 20px #00f0ff33;
+}
+input{
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  width:85%;
+  margin-bottom:10px;
+}
+button{
+  background:#00e5ff;
+  color:black;
+  border:none;
+  padding:10px 18px;
+  border-radius:10px;
+  font-weight:bold;
+  margin-top:8px;
+  cursor:pointer;
+}
+hr{margin:15px 0;}
+</style>
 </head>
+
 <body>
 
-  <h1>VEXA Miner</h1>
-  <div>Your Coins:</div>
-  <div id="coins">0</div>
-  <button id="mineBtn">Mine Coins</button>
-  <div id="message"></div>
+<div class="card">
 
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+<h2>VEXA Mining PRO</h2>
 
-    const SUPABASE_URL = 'https://YOUR_SUPABASE_URL';
-    const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+<!-- Authentication Section -->
+<div id="authSection">
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="signUp()">Sign Up</button>
+<button onclick="login()">Login</button>
+</div>
 
-    const coinsDiv = document.getElementById('coins');
-    const mineBtn = document.getElementById('mineBtn');
-    const messageDiv = document.getElementById('message');
+<!-- App Section -->
+<div id="appSection" style="display:none;">
+<h3 id="balance">Balance: 0 VEXA</h3>
+<h4 id="level">Level: 1</h4>
 
-    let user = null;
-    let coins = 0;
+<button onclick="startMining()">Start Mining</button>
+<button onclick="upgrade()">Upgrade Miner</button>
 
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'github' });
-        // User will sign in via GitHub popup
-        return;
-      }
-      user = session.user;
-      await loadCoins();
-    }
+<hr>
 
-    async function loadCoins() {
-      const { data, error } = await supabase
-        .from('users')
-        .select('coins')
-        .eq('id', user.id)
-        .single();
-      if (error) {
-        console.error(error);
-        messageDiv.textContent = 'Error loading coins!';
-        return;
-      }
-      coins = data.coins || 0;
-      coinsDiv.textContent = coins;
-    }
+<h4>Withdraw</h4>
+<input id="withdrawAmount" placeholder="Amount to withdraw">
+<input id="walletAddress" placeholder="Wallet address">
+<button onclick="withdraw()">Request Withdrawal</button>
 
-    async function mineCoins() {
-      mineBtn.disabled = true;
-      messageDiv.textContent = 'Mining... ⛏️';
+<br><br>
+<button onclick="logout()">Logout</button>
+</div>
 
-      // simulate mining delay
-      await new Promise(res => setTimeout(res, 1500));
+</div>
 
-      const earned = Math.floor(Math.random() * 10) + 1; // 1–10 coins
-      coins += earned;
-      coinsDiv.textContent = coins;
+<script>
+// Supabase client
+const supabaseClient = window.supabase.createClient(
+  'https://qmcjmnugpujsqabqejpx.supabase.co',
+  'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
+);
 
-      // Update Supabase
-      const { error } = await supabase
-        .from('users')
-        .upsert({ id: user.id, coins }, { onConflict: 'id' });
-      if (error) {
-        console.error(error);
-        messageDiv.textContent = 'Error saving coins!';
-      } else {
-        messageDiv.textContent = `You mined ${earned} coins! 🎉`;
-      }
+let currentUser = null;
+let miningInterval;
 
-      mineBtn.disabled = false;
-    }
+// Sign Up
+async function signUp(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-    mineBtn.addEventListener('click', mineCoins);
-    init();
-  </script>
+  const { error } = await supabaseClient.auth.signUp({ email, password });
+  if(error){ alert(error.message); return; }
+
+  alert("Check your email to confirm account.");
+}
+
+// Login
+async function login(){
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if(error){ alert(error.message); return; }
+
+  currentUser = data.user;
+
+  document.getElementById("authSection").style.display="none";
+  document.getElementById("appSection").style.display="block";
+
+  loadUser();
+}
+
+// Load User Data
+async function loadUser(){
+  let { data } = await supabaseClient
+    .from('users')
+    .select('*')
+    .eq('username', currentUser.id)
+    .single();
+
+  if(!data){
+    await supabaseClient.from('users').insert({
+      username: currentUser.id,
+      balance: 0,
+      level: 1
+    });
+    document.getElementById("balance").innerText = "Balance: 0 VEXA";
+    document.getElementById("level").innerText = "Level: 1";
+  } else {
+    document.getElementById("balance").innerText = "Balance: " + data.balance + " VEXA";
+    document.getElementById("level").innerText = "Level: " + data.level;
+  }
+}
+
+// Start Mining
+async function startMining(){
+  if(miningInterval) return;
+
+  miningInterval = setInterval(async () => {
+    await supabaseClient.rpc('mine_coin', { uid: currentUser.id });
+    loadUser();
+  }, 5000);
+}
+
+// Upgrade Miner
+async function upgrade(){
+  await supabaseClient.rpc('upgrade_miner', { uid: currentUser.id });
+  loadUser();
+}
+
+// Withdraw Request
+async function withdraw(){
+  const amount = parseInt(document.getElementById("withdrawAmount").value);
+  const wallet = document.getElementById("walletAddress").value;
+
+  if(!amount || !wallet){
+    alert("Enter amount and wallet");
+    return;
+  }
+
+  await supabaseClient.rpc('request_withdraw', {
+    uid: currentUser.id,
+    amt: amount,
+    wallet_addr: wallet
+  });
+
+  alert("Withdrawal request submitted.");
+  loadUser();
+}
+
+// Logout
+async function logout(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
+
+</script>
+
 </body>
 </html>
