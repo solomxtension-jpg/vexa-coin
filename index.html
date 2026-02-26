@@ -3,10 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <title>VEXA Mining PRO</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  // Import Supabase client properly
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  
+  // Initialize Supabase client (replace with your anon key)
+  const supabase = createClient(
+    'https://qmcjmnugpujsqabqejpx.supabase.co',
+    'YOUR_ANON_KEY_HERE'
+  );
+
+  window.supabase = supabase; // optional for debugging
+</script>
 
 <!-- PWA Manifest -->
 <link rel="manifest" href="manifest.json">
+
 <script>
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/service-worker.js')
@@ -87,22 +99,19 @@ hr{margin:15px 0;}
 
 </div>
 
-<script>
+<script type="module">
 // Supabase client
-const supabaseClient = window.supabase.createClient(
-  'https://qmcjmnugpujsqabqejpx.supabase.co',
-  'sb_publishable_iJ0Xgceyxde4ZnAXeRHcqQ_wNzyi4iq'
-);
+const supabase = window.supabase;
 
 let currentUser = null;
-let miningInterval;
+let miningInterval = null;
 
 // Sign Up
 async function signUp(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const { error } = await supabaseClient.auth.signUp({ email, password });
+  const { error } = await supabase.auth.signUp({ email, password });
   if(error){ alert(error.message); return; }
 
   alert("Check your email to confirm account.");
@@ -113,7 +122,7 @@ async function login(){
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if(error){ alert(error.message); return; }
 
   currentUser = data.user;
@@ -121,26 +130,26 @@ async function login(){
   document.getElementById("authSection").style.display="none";
   document.getElementById("appSection").style.display="block";
 
-  loadUser();
+  await loadUser();
 }
 
 // Load User Data
 async function loadUser(){
-  let { data } = await supabaseClient
+  const { data, error } = await supabase
     .from('users')
     .select('*')
-    .eq('username', currentUser.id)
+    .eq('id', currentUser.id) // matches Supabase Auth id
     .single();
 
-  if(!data){
-    await supabaseClient.from('users').insert({
-      username: currentUser.id,
+  if(error && error.code === 'PGRST116'){ // user not found
+    await supabase.from('users').insert({
+      id: currentUser.id,
       balance: 0,
       level: 1
     });
     document.getElementById("balance").innerText = "Balance: 0 VEXA";
     document.getElementById("level").innerText = "Level: 1";
-  } else {
+  } else if(data){
     document.getElementById("balance").innerText = "Balance: " + data.balance + " VEXA";
     document.getElementById("level").innerText = "Level: " + data.level;
   }
@@ -151,15 +160,17 @@ async function startMining(){
   if(miningInterval) return;
 
   miningInterval = setInterval(async () => {
-    await supabaseClient.rpc('mine_coin', { uid: currentUser.id });
-    loadUser();
+    const { error } = await supabase.rpc('mine_coin', { uid: currentUser.id });
+    if(error){ console.error(error); return; }
+    await loadUser();
   }, 5000);
 }
 
 // Upgrade Miner
 async function upgrade(){
-  await supabaseClient.rpc('upgrade_miner', { uid: currentUser.id });
-  loadUser();
+  const { error } = await supabase.rpc('upgrade_miner', { uid: currentUser.id });
+  if(error){ console.error(error); return; }
+  await loadUser();
 }
 
 // Withdraw Request
@@ -172,22 +183,23 @@ async function withdraw(){
     return;
   }
 
-  await supabaseClient.rpc('request_withdraw', {
+  const { error } = await supabase.rpc('request_withdraw', {
     uid: currentUser.id,
     amt: amount,
     wallet_addr: wallet
   });
 
+  if(error){ console.error(error); alert(error.message); return; }
+
   alert("Withdrawal request submitted.");
-  loadUser();
+  await loadUser();
 }
 
 // Logout
 async function logout(){
-  await supabaseClient.auth.signOut();
+  await supabase.auth.signOut();
   location.reload();
 }
-
 </script>
 
 </body>
