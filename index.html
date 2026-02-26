@@ -74,8 +74,8 @@ hr{margin:15px 0;}
 <div id="authSection">
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
-<button onclick="signUp()">Sign Up</button>
-<button onclick="login()">Login</button>
+<button id="signUpBtn">Sign Up</button>
+<button id="loginBtn">Login</button>
 </div>
 
 <!-- App Section -->
@@ -83,65 +83,60 @@ hr{margin:15px 0;}
 <h3 id="balance">Balance: 0 VEXA</h3>
 <h4 id="level">Level: 1</h4>
 
-<button onclick="startMining()">Start Mining</button>
-<button onclick="upgrade()">Upgrade Miner</button>
+<button id="mineBtn">Start Mining</button>
+<button id="upgradeBtn">Upgrade Miner</button>
 
 <hr>
 
 <h4>Withdraw</h4>
 <input id="withdrawAmount" placeholder="Amount to withdraw">
 <input id="walletAddress" placeholder="Wallet address">
-<button onclick="withdraw()">Request Withdrawal</button>
+<button id="withdrawBtn">Request Withdrawal</button>
 
 <br><br>
-<button onclick="logout()">Logout</button>
+<button id="logoutBtn">Logout</button>
 </div>
 
 </div>
 
 <script type="module">
-// Supabase client
+// Use the supabase client
 const supabase = window.supabase;
 
 let currentUser = null;
 let miningInterval = null;
 
-// Sign Up
-async function signUp(){
+// --- Auth Functions ---
+window.signUp = async function() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-
   const { error } = await supabase.auth.signUp({ email, password });
   if(error){ alert(error.message); return; }
-
   alert("Check your email to confirm account.");
 }
 
-// Login
-async function login(){
+window.login = async function() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
-
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if(error){ alert(error.message); return; }
 
   currentUser = data.user;
-
   document.getElementById("authSection").style.display="none";
   document.getElementById("appSection").style.display="block";
 
   await loadUser();
 }
 
-// Load User Data
+// --- Load User ---
 async function loadUser(){
   const { data, error } = await supabase
     .from('users')
     .select('*')
-    .eq('id', currentUser.id) // matches Supabase Auth id
+    .eq('id', currentUser.id)
     .single();
 
-  if(error && error.code === 'PGRST116'){ // user not found
+  if(error && error.code === 'PGRST116'){
     await supabase.from('users').insert({
       id: currentUser.id,
       balance: 0,
@@ -155,8 +150,8 @@ async function loadUser(){
   }
 }
 
-// Start Mining
-async function startMining(){
+// --- Mining ---
+window.startMining = function() {
   if(miningInterval) return;
 
   miningInterval = setInterval(async () => {
@@ -166,15 +161,15 @@ async function startMining(){
   }, 5000);
 }
 
-// Upgrade Miner
-async function upgrade(){
+// --- Upgrade ---
+window.upgrade = async function() {
   const { error } = await supabase.rpc('upgrade_miner', { uid: currentUser.id });
   if(error){ console.error(error); return; }
   await loadUser();
 }
 
-// Withdraw Request
-async function withdraw(){
+// --- Withdraw ---
+window.withdraw = async function() {
   const amount = parseInt(document.getElementById("withdrawAmount").value);
   const wallet = document.getElementById("walletAddress").value;
 
@@ -195,11 +190,20 @@ async function withdraw(){
   await loadUser();
 }
 
-// Logout
-async function logout(){
+// --- Logout ---
+window.logout = async function() {
   await supabase.auth.signOut();
   location.reload();
 }
+
+// --- Attach Event Listeners for Buttons ---
+document.getElementById("signUpBtn").addEventListener("click", window.signUp);
+document.getElementById("loginBtn").addEventListener("click", window.login);
+document.getElementById("mineBtn").addEventListener("click", window.startMining);
+document.getElementById("upgradeBtn").addEventListener("click", window.upgrade);
+document.getElementById("withdrawBtn").addEventListener("click", window.withdraw);
+document.getElementById("logoutBtn").addEventListener("click", window.logout);
+
 </script>
 
 </body>
