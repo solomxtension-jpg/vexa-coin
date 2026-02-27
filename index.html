@@ -6,8 +6,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<link rel="manifest" href="manifest.json">
-
 <style>
 body{
   background:#0b0f1a;
@@ -22,7 +20,6 @@ body{
   border-radius:15px;
   width:350px;
   margin:auto;
-  box-shadow:0 0 20px #00f0ff33;
 }
 input{
   padding:10px;
@@ -49,79 +46,58 @@ button{
 <div class="card">
 <h2>VEXA Mining PRO</h2>
 
-<div id="authSection">
+<div id="auth">
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
-<button onclick="signUp()">Sign Up</button>
+<button onclick="signup()">Sign Up</button>
 <button onclick="login()">Login</button>
 </div>
 
-<div id="appSection" style="display:none;">
-<h3 id="balance">Balance: 0 VEXA</h3>
-<h4 id="level">Level: 1</h4>
-
-<button onclick="startMining()">Start Mining</button>
+<div id="app" style="display:none;">
+<h3 id="status">Logged in</h3>
 <button onclick="logout()">Logout</button>
 </div>
 </div>
 
 <script>
-const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
-
-// IMPORTANT: use proxy
 const supabase = window.supabase.createClient(
-  "https://corsproxy.io/?" + SUPABASE_URL,
-  SUPABASE_KEY
+  "https://qmcjmnugpujsqabqejpx.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo"
 );
 
-let currentUser = null;
-
-// SIGN UP
-async function signUp(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+async function signup(){
+  const email = emailInput();
+  const password = passwordInput();
 
   const { error } = await supabase.auth.signUp({ email, password });
 
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  alert("Signup successful. You can now login.");
+  if(error) return alert(error.message);
+  alert("Signup successful. Check email if required.");
 }
 
-// LOGIN
 async function login(){
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
+  const email = emailInput();
+  const password = passwordInput();
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } =
+    await supabase.auth.signInWithPassword({ email, password });
 
-  if(error){
-    alert(error.message);
-    return;
-  }
+  if(error) return alert(error.message);
 
-  currentUser = data.user;
-  document.getElementById("authSection").style.display = "none";
-  document.getElementById("appSection").style.display = "block";
+  document.getElementById("auth").style.display = "none";
+  document.getElementById("app").style.display = "block";
 }
 
-// MINING (visual demo)
-function startMining(){
-  let balance = 0;
-  setInterval(()=>{
-    balance++;
-    document.getElementById("balance").innerText = "Balance: " + balance + " VEXA";
-  }, 3000);
-}
-
-// LOGOUT
 async function logout(){
   await supabase.auth.signOut();
   location.reload();
+}
+
+function emailInput(){
+  return document.getElementById("email").value.trim();
+}
+function passwordInput(){
+  return document.getElementById("password").value.trim();
 }
 </script>
 
