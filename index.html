@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>VEXA Mining PRO</title>
 
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
 
   <style>
@@ -56,33 +55,35 @@
 <div class="card">
   <h2>VEXA Mining PRO</h2>
 
+  <!-- AUTH -->
   <div id="authBox">
     <input id="email" type="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
-    <button onclick="signUp()">Sign Up</button>
-    <button class="secondary" onclick="login()">Login</button>
+    <button id="signupBtn">Sign Up</button>
+    <button id="loginBtn" class="secondary">Login</button>
   </div>
 
+  <!-- APP -->
   <div id="appBox" style="display:none">
     <h3>Logged in ✅</h3>
-    <button onclick="logout()">Logout</button>
+    <button id="logoutBtn">Logout</button>
   </div>
 </div>
 
-<!-- ✅ SUPABASE MODULE SCRIPT -->
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-  const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
-  const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
+  const supabase = createClient(
+    "https://qmcjmnugpujsqabqejpx.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo"
+  );
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
 
-  // 👇 expose functions to buttons
-  window.signUp = async function(){
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+  document.getElementById("signupBtn").addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
 
     if(!email || !password){
       alert("Enter email and password");
@@ -96,12 +97,12 @@
       return;
     }
 
-    alert("Signup successful. You can now login.");
-  }
+    alert("Signup successful. Now login.");
+  });
 
-  window.login = async function(){
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
 
     const { error } =
       await supabase.auth.signInWithPassword({ email, password });
@@ -113,12 +114,12 @@
 
     document.getElementById("authBox").style.display = "none";
     document.getElementById("appBox").style.display = "block";
-  }
+  });
 
-  window.logout = async function(){
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
     await supabase.auth.signOut();
     location.reload();
-  }
+  });
 </script>
 
 </body>
