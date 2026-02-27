@@ -66,6 +66,7 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 <div id="appBox" style="display:none;">
 <h3 id="balance">Balance: 0 VEXA</h3>
 <h4 id="level">Level: 1</h4>
+<h4 id="cps">Mining rate: 0 VEXA / 5s</h4>
 
 <button id="mineBtn">Start Mining</button>
 <button id="stopMineBtn" class="secondary">Stop Mining</button>
@@ -86,6 +87,9 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
+// -----------------------------
+// Initialize Supabase
+// -----------------------------
 const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
 
@@ -95,9 +99,9 @@ const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const authBox = document.getElementById("authBox");
 const appBox = document.getElementById("appBox");
-
 const balanceText = document.getElementById("balance");
 const levelText = document.getElementById("level");
+const cpsText = document.getElementById("cps");
 
 let miningInterval = null;
 
@@ -106,8 +110,10 @@ document.getElementById("signupBtn").addEventListener("click", async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
   if(!email || !password){ alert("Enter email and password"); return; }
+
   const { error } = await supabase.auth.signUp({ email, password });
   if(error){ alert(error.message); return; }
+
   alert("Signup successful. Now login.");
 });
 
@@ -130,7 +136,7 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
   location.reload();
 });
 
-// -------------------- LOAD USER --------------------
+// -------------------- LOAD USER + CPS --------------------
 async function loadUser(){
   const user = supabase.auth.getUser().data.user;
   if(!user) return;
@@ -144,6 +150,9 @@ async function loadUser(){
 
   balanceText.innerText = "Balance: " + data.balance + " VEXA";
   levelText.innerText = "Level: " + data.level;
+
+  const cps = 1 * data.level; // base 1 coin × level
+  cpsText.innerText = `Mining rate: ${cps} VEXA / 5s`;
 }
 
 // -------------------- START MINING --------------------
@@ -154,12 +163,11 @@ document.getElementById("mineBtn").addEventListener("click", () => {
     const user = supabase.auth.getUser().data.user;
     if(!user) return;
 
-    // RPC call: mine_coin(uid, rate)
-    const { data, error } = await supabase.rpc('mine_coin', { uid: user.id });
+    const { error } = await supabase.rpc('mine_coin', { uid: user.id });
     if(error){ console.log("Mining error:", error.message); return; }
 
     loadUser();
-  }, 5000); // every 5 seconds
+  }, 5000);
 
   alert("Mining started! Coins are added automatically.");
 });
@@ -203,6 +211,14 @@ document.getElementById("withdrawBtn").addEventListener("click", async () => {
   alert("Withdrawal request submitted.");
   loadUser();
 });
+
+// -------------------- OPTIONAL: LIVE CPS EVERY SECOND --------------------
+setInterval(() => {
+  const level = parseInt(levelText.innerText.replace("Level: ","")) || 1;
+  const cps = 1 * level;
+  cpsText.innerText = `Mining rate: ${cps} VEXA / 5s`;
+}, 1000);
+
 </script>
 
 </body>
