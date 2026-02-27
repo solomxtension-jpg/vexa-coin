@@ -215,12 +215,12 @@ document.getElementById("withdrawBtn").addEventListener("click", async () => {
   loadUser();
 });
 
-// -------------------- LIVE CPS + TODAY EVERY SECOND --------------------
+// -------------------- LIVE CPS + TODAY UPDATE --------------------
 setInterval(() => {
   const level = parseInt(levelText.innerText.replace("Level: ","")) || 1;
   const cps = 1 * level;
   cpsText.innerText = `Mining rate: ${cps} VEXA / 5s`;
-  loadUser(); // update today dynamically
+  loadUser();
 }, 1000);
 
 </script>
