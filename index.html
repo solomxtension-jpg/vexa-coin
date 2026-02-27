@@ -8,8 +8,8 @@
 <style>
 body{
   background:#0b0f1a;
-  color:#ffffff;
-  font-family: Arial, sans-serif;
+  color:#fff;
+  font-family:Arial,sans-serif;
   display:flex;
   justify-content:center;
   align-items:center;
@@ -47,7 +47,6 @@ button.secondary{
   color:#fff;
 }
 hr{margin:15px 0; border-color:#00e5ff33;}
-
 #progressContainer{
   width:90%;
   height:20px;
@@ -63,6 +62,16 @@ hr{margin:15px 0; border-color:#00e5ff33;}
   border-radius:10px;
   transition: width 0.2s linear;
 }
+.floating-coin{
+  position:absolute;
+  font-size:18px;
+  color:#00e5ff;
+  animation:floatUp 1s linear forwards;
+}
+@keyframes floatUp{
+  0% {opacity:1; transform:translateY(0);}
+  100% {opacity:0; transform:translateY(-50px);}
+}
 </style>
 </head>
 <body>
@@ -70,7 +79,6 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 <div class="card">
 <h2>VEXA Mining PRO</h2>
 
-<!-- Authentication -->
 <div id="authBox">
 <input id="email" type="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
@@ -78,7 +86,6 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 <button id="loginBtn" class="secondary">Login</button>
 </div>
 
-<!-- App Section -->
 <div id="appBox" style="display:none;">
 <h3 id="balance">Balance: 0 VEXA</h3>
 <h4 id="level">Level: 1</h4>
@@ -124,162 +131,119 @@ const cpsText = document.getElementById("cps");
 const todayText = document.getElementById("today");
 
 const progressBar = document.getElementById("progressBar");
+let miningInterval=null, animationInterval=null;
 
-let miningInterval = null;
-let animationInterval = null;
-
-// -------------------- SIGNUP --------------------
-document.getElementById("signupBtn").addEventListener("click", async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
-  if(!email || !password){ alert("Enter email and password"); return; }
-
-  const { error } = await supabase.auth.signUp({ email, password });
-  if(error){ alert(error.message); return; }
-
+// SIGNUP
+document.getElementById("signupBtn").addEventListener("click", async()=>{
+  const email=emailInput.value.trim(), password=passwordInput.value.trim();
+  if(!email||!password){alert("Enter email and password"); return;}
+  const {error}=await supabase.auth.signUp({email,password});
+  if(error){alert(error.message); return;}
   alert("Signup successful. Now login.");
 });
 
-// -------------------- LOGIN --------------------
-document.getElementById("loginBtn").addEventListener("click", async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
-
-  const { error, data } = await supabase.auth.signInWithPassword({ email, password });
-  if(error){ alert(error.message); return; }
-
-  authBox.style.display = "none";
-  appBox.style.display = "block";
-
-  await ensureUserRow();
-  loadUser();
+// LOGIN
+document.getElementById("loginBtn").addEventListener("click", async()=>{
+  const email=emailInput.value.trim(), password=passwordInput.value.trim();
+  const {error,data}=await supabase.auth.signInWithPassword({email,password});
+  if(error){alert(error.message); return;}
+  authBox.style.display="none"; appBox.style.display="block";
+  await ensureUserRow(); loadUser();
 });
 
-// -------------------- LOGOUT --------------------
-document.getElementById("logoutBtn").addEventListener("click", async () => {
-  await supabase.auth.signOut();
-  location.reload();
+// LOGOUT
+document.getElementById("logoutBtn").addEventListener("click", async()=>{
+  await supabase.auth.signOut(); location.reload();
 });
 
-// -------------------- ENSURE USER ROW --------------------
+// ENSURE USER ROW
 async function ensureUserRow(){
-  const user = supabase.auth.getUser().data.user;
+  const user=(await supabase.auth.getUser()).data.user;
   if(!user) return;
-
-  const { data } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
+  const {data}=await supabase.from('users').select('*').eq('id',user.id).single();
   if(!data){
-    await supabase.from('users').insert({
-      id: user.id,
-      balance: 0,
-      level: 1,
-      coins_today: 0
-    });
+    await supabase.from('users').insert({id:user.id,balance:0,level:1,coins_today:0});
   }
 }
 
-// -------------------- LOAD USER --------------------
+// LOAD USER
 async function loadUser(){
-  const user = supabase.auth.getUser().data.user;
+  const user=(await supabase.auth.getUser()).data.user;
   if(!user) return;
-
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-  if(error){ console.log(error.message); return; }
-
-  balanceText.innerText = "Balance: " + data.balance + " VEXA";
-  levelText.innerText = "Level: " + data.level;
-  const cps = 1 * data.level;
-  cpsText.innerText = `Mining rate: ${cps} VEXA / 5s`;
-  todayText.innerText = `Mined today: ${data.coins_today || 0} VEXA`;
+  const {data,error}=await supabase.from('users').select('*').eq('id',user.id).single();
+  if(error){console.log(error.message); return;}
+  balanceText.innerText="Balance: "+data.balance+" VEXA";
+  levelText.innerText="Level: "+data.level;
+  const cps=1*data.level;
+  cpsText.innerText=`Mining rate: ${cps} VEXA / 5s`;
+  todayText.innerText=`Mined today: ${data.coins_today||0} VEXA`;
 }
 
-// -------------------- START MINING --------------------
-document.getElementById("mineBtn").addEventListener("click", () => {
+// START MINING
+document.getElementById("mineBtn").addEventListener("click",()=>{
   if(miningInterval) return;
+  let progress=0;
+  animationInterval=setInterval(()=>{
+    progress+=2; 
+    if(progress>=100) progress=0;
+    progressBar.style.width=progress+"%";
+  },100);
 
-  // Animation interval for progress bar
-  let progress = 0;
-  animationInterval = setInterval(() => {
-    progress += 2; // increase progress every 100ms (approx 5s to fill)
-    if(progress >= 100) progress = 0;
-    progressBar.style.width = progress + "%";
-  }, 100);
-
-  // Mining RPC interval
-  miningInterval = setInterval(async () => {
-    const user = supabase.auth.getUser().data.user;
+  miningInterval=setInterval(async()=>{
+    const user=(await supabase.auth.getUser()).data.user;
     if(!user) return;
-
-    const { error } = await supabase.rpc('mine_coin', { uid: user.id });
-    if(error){ console.log("Mining error:", error.message); return; }
-
+    const {error}=await supabase.rpc('mine_coin',{uid:user.id});
+    if(error){console.log("Mining error:",error.message); return;}
     loadUser();
-  }, 5000);
-
+    createFloatingCoin();
+  },5000);
   alert("Mining started!");
 });
 
-// -------------------- STOP MINING --------------------
-document.getElementById("stopMineBtn").addEventListener("click", () => {
-  if(miningInterval){
-    clearInterval(miningInterval);
-    miningInterval = null;
-  }
-  if(animationInterval){
-    clearInterval(animationInterval);
-    animationInterval = null;
-  }
-  progressBar.style.width = "0%";
+// STOP MINING
+document.getElementById("stopMineBtn").addEventListener("click",()=>{
+  if(miningInterval){clearInterval(miningInterval); miningInterval=null;}
+  if(animationInterval){clearInterval(animationInterval); animationInterval=null;}
+  progressBar.style.width="0%";
   alert("Mining stopped.");
 });
 
-// -------------------- UPGRADE --------------------
-document.getElementById("upgradeBtn").addEventListener("click", async () => {
-  const user = supabase.auth.getUser().data.user;
+// UPGRADE
+document.getElementById("upgradeBtn").addEventListener("click",async()=>{
+  const user=(await supabase.auth.getUser()).data.user;
   if(!user) return;
-
-  const { error } = await supabase.rpc('upgrade_miner', { uid: user.id });
-  if(error){ console.log("Upgrade error:", error.message); return; }
-
+  const {error}=await supabase.rpc('upgrade_miner',{uid:user.id});
+  if(error){console.log("Upgrade error:",error.message); return;}
   loadUser();
 });
 
-// -------------------- WITHDRAW --------------------
-document.getElementById("withdrawBtn").addEventListener("click", async () => {
-  const amount = parseInt(document.getElementById("withdrawAmount").value);
-  const wallet = document.getElementById("walletAddress").value;
-  const user = supabase.auth.getUser().data.user;
-
-  if(!amount || !wallet){ alert("Enter amount and wallet"); return; }
-
-  const { error } = await supabase.rpc('request_withdraw', {
-    uid: user.id,
-    amt: amount,
-    wallet_addr: wallet
-  });
-
-  if(error){ console.log("Withdraw error:", error.message); return; }
-
+// WITHDRAW
+document.getElementById("withdrawBtn").addEventListener("click",async()=>{
+  const amount=parseInt(document.getElementById("withdrawAmount").value);
+  const wallet=document.getElementById("walletAddress").value;
+  const user=(await supabase.auth.getUser()).data.user;
+  if(!amount||!wallet){alert("Enter amount and wallet"); return;}
+  const {error}=await supabase.rpc('request_withdraw',{uid:user.id,amt:amount,wallet_addr:wallet});
+  if(error){console.log("Withdraw error:",error.message); return;}
   alert("Withdrawal request submitted.");
   loadUser();
 });
 
-// -------------------- LIVE CPS UPDATE --------------------
-setInterval(() => {
-  const level = parseInt(levelText.innerText.replace("Level: ","")) || 1;
-  const cps = 1 * level;
-  cpsText.innerText = `Mining rate: ${cps} VEXA / 5s`;
-  loadUser();
-}, 1000);
+// LIVE CPS UPDATE
+setInterval(()=>{const level=parseInt(levelText.innerText.replace("Level: ",""))||1;
+cpsText.innerText=`Mining rate: ${level} VEXA / 5s`; loadUser();},1000);
 
+// FLOATING COINS
+function createFloatingCoin(){
+  const coin=document.createElement("div");
+  coin.className="floating-coin";
+  coin.innerText="🪙";
+  const rect=progressBar.getBoundingClientRect();
+  coin.style.left=(rect.left + Math.random()*rect.width)+"px";
+  coin.style.top=(rect.top - 20)+"px";
+  document.body.appendChild(coin);
+  setTimeout(()=>coin.remove(),1000);
+}
 </script>
 
 </body>
