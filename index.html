@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>VEXA Mining PRO</title>
 
+  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
 
   <style>
@@ -47,80 +48,6 @@
       background:#1c2747;
       color:#fff;
     }
+    hr{margin:15px 0; border-color:#00e5ff33;}
   </style>
 </head>
-
-<body>
-
-<div class="card">
-  <h2>VEXA Mining PRO</h2>
-
-  <!-- AUTH -->
-  <div id="authBox">
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button id="signupBtn">Sign Up</button>
-    <button id="loginBtn" class="secondary">Login</button>
-  </div>
-
-  <!-- APP -->
-  <div id="appBox" style="display:none">
-    <h3>Logged in ✅</h3>
-    <button id="logoutBtn">Logout</button>
-  </div>
-</div>
-
-<script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-
-  const supabase = createClient(
-    "https://qmcjmnugpujsqabqejpx.supabase.co",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo"
-  );
-
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
-
-  document.getElementById("signupBtn").addEventListener("click", async () => {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-
-    if(!email || !password){
-      alert("Enter email and password");
-      return;
-    }
-
-    const { error } = await supabase.auth.signUp({ email, password });
-
-    if(error){
-      alert(error.message);
-      return;
-    }
-
-    alert("Signup successful. Now login.");
-  });
-
-  document.getElementById("loginBtn").addEventListener("click", async () => {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value.trim();
-
-    const { error } =
-      await supabase.auth.signInWithPassword({ email, password });
-
-    if(error){
-      alert(error.message);
-      return;
-    }
-
-    document.getElementById("authBox").style.display = "none";
-    document.getElementById("appBox").style.display = "block";
-  });
-
-  document.getElementById("logoutBtn").addEventListener("click", async () => {
-    await supabase.auth.signOut();
-    location.reload();
-  });
-</script>
-
-</body>
-</html>
