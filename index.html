@@ -1,96 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>VEXA Mining PRO</title>
+<meta charset="UTF-8">
+<title>VEXA Mining PRO</title>
+<link rel="manifest" href="manifest.json">
 
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json">
-
-  <style>
-    body{
-      background:#0b0f1a;
-      color:#ffffff;
-      font-family: Arial, sans-serif;
-      display:flex;
-      justify-content:center;
-      align-items:center;
-      height:100vh;
-      margin:0;
-    }
-    .card{
-      background:#11182b;
-      padding:25px;
-      border-radius:16px;
-      width:340px;
-      box-shadow:0 0 25px rgba(0,229,255,.2);
-      text-align:center;
-    }
-    input{
-      width:90%;
-      padding:12px;
-      margin:8px 0;
-      border-radius:8px;
-      border:none;
-    }
-    button{
-      width:95%;
-      padding:12px;
-      margin-top:10px;
-      border-radius:10px;
-      border:none;
-      background:#00e5ff;
-      color:#000;
-      font-weight:bold;
-      cursor:pointer;
-    }
-    button.secondary{
-      background:#1c2747;
-      color:#fff;
-    }
-    hr{margin:15px 0; border-color:#00e5ff33;}
-  </style>
+<style>
+body{
+  background:#0b0f1a;
+  color:#ffffff;
+  font-family: Arial, sans-serif;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  margin:0;
+}
+.card{
+  background:#11182b;
+  padding:25px;
+  border-radius:16px;
+  width:340px;
+  box-shadow:0 0 25px rgba(0,229,255,.2);
+  text-align:center;
+}
+input{
+  width:90%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:8px;
+  border:none;
+}
+button{
+  width:95%;
+  padding:12px;
+  margin-top:10px;
+  border-radius:10px;
+  border:none;
+  background:#00e5ff;
+  color:#000;
+  font-weight:bold;
+  cursor:pointer;
+}
+button.secondary{
+  background:#1c2747;
+  color:#fff;
+}
+hr{margin:15px 0; border-color:#00e5ff33;}
+</style>
 </head>
-
 <body>
 
 <div class="card">
-  <h2>VEXA Mining PRO</h2>
+<h2>VEXA Mining PRO</h2>
 
-  <!-- Authentication -->
-  <div id="authBox">
-    <input id="email" type="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <button id="signupBtn">Sign Up</button>
-    <button id="loginBtn" class="secondary">Login</button>
-  </div>
+<!-- Authentication -->
+<div id="authBox">
+<input id="email" type="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button id="signupBtn">Sign Up</button>
+<button id="loginBtn" class="secondary">Login</button>
+</div>
 
-  <!-- App Section -->
-  <div id="appBox" style="display:none;">
-    <h3 id="balance">Balance: 0 VEXA</h3>
-    <h4 id="level">Level: 1</h4>
+<!-- App Section -->
+<div id="appBox" style="display:none;">
+<h3 id="balance">Balance: 0 VEXA</h3>
+<h4 id="level">Level: 1</h4>
 
-    <button id="mineBtn">Start Mining</button>
-    <button id="upgradeBtn">Upgrade Miner</button>
+<button id="mineBtn">Start Mining</button>
+<button id="stopMineBtn" class="secondary">Stop Mining</button>
+<button id="upgradeBtn">Upgrade Miner</button>
 
-    <hr>
+<hr>
 
-    <h4>Withdraw</h4>
-    <input id="withdrawAmount" placeholder="Amount to withdraw">
-    <input id="walletAddress" placeholder="Wallet address">
-    <button id="withdrawBtn">Request Withdrawal</button>
+<h4>Withdraw</h4>
+<input id="withdrawAmount" placeholder="Amount to withdraw">
+<input id="walletAddress" placeholder="Wallet address">
+<button id="withdrawBtn">Request Withdrawal</button>
 
-    <br><br>
-    <button id="logoutBtn">Logout</button>
-  </div>
+<br><br>
+<button id="logoutBtn">Logout</button>
+</div>
 </div>
 
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-// -----------------------------
-// 1️⃣ Initialize Supabase
-// -----------------------------
 const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
 
@@ -98,7 +93,6 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
-
 const authBox = document.getElementById("authBox");
 const appBox = document.getElementById("appBox");
 
@@ -107,22 +101,17 @@ const levelText = document.getElementById("level");
 
 let miningInterval = null;
 
-// -----------------------------
-// 2️⃣ Signup
-// -----------------------------
+// -------------------- SIGNUP --------------------
 document.getElementById("signupBtn").addEventListener("click", async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
   if(!email || !password){ alert("Enter email and password"); return; }
-
   const { error } = await supabase.auth.signUp({ email, password });
   if(error){ alert(error.message); return; }
   alert("Signup successful. Now login.");
 });
 
-// -----------------------------
-// 3️⃣ Login
-// -----------------------------
+// -------------------- LOGIN --------------------
 document.getElementById("loginBtn").addEventListener("click", async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
@@ -132,22 +121,17 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
 
   authBox.style.display = "none";
   appBox.style.display = "block";
-
   loadUser();
 });
 
-// -----------------------------
-// 4️⃣ Logout
-// -----------------------------
+// -------------------- LOGOUT --------------------
 document.getElementById("logoutBtn").addEventListener("click", async () => {
   await supabase.auth.signOut();
   location.reload();
 });
 
-// -----------------------------
-// 5️⃣ Load user data
-// -----------------------------
-async function loadUser() {
+// -------------------- LOAD USER --------------------
+async function loadUser(){
   const user = supabase.auth.getUser().data.user;
   if(!user) return;
 
@@ -156,16 +140,13 @@ async function loadUser() {
     .select('*')
     .eq('id', user.id)
     .single();
-
-  if(error){ console.log("Error loading user:", error.message); return; }
+  if(error){ console.log(error.message); return; }
 
   balanceText.innerText = "Balance: " + data.balance + " VEXA";
   levelText.innerText = "Level: " + data.level;
 }
 
-// -----------------------------
-// 6️⃣ Mining (RPC version)
-// -----------------------------
+// -------------------- START MINING --------------------
 document.getElementById("mineBtn").addEventListener("click", () => {
   if(miningInterval) return;
 
@@ -173,19 +154,26 @@ document.getElementById("mineBtn").addEventListener("click", () => {
     const user = supabase.auth.getUser().data.user;
     if(!user) return;
 
-    // Call your Supabase RPC function 'mine_coin'
-    const { error } = await supabase.rpc('mine_coin', { uid: user.id });
+    // RPC call: mine_coin(uid, rate)
+    const { data, error } = await supabase.rpc('mine_coin', { uid: user.id });
     if(error){ console.log("Mining error:", error.message); return; }
 
     loadUser();
-  }, 5000);
+  }, 5000); // every 5 seconds
 
-  alert("Mining started! Coins added every 5 seconds.");
+  alert("Mining started! Coins are added automatically.");
 });
 
-// -----------------------------
-// 7️⃣ Upgrade Miner (RPC)
-// -----------------------------
+// -------------------- STOP MINING --------------------
+document.getElementById("stopMineBtn").addEventListener("click", () => {
+  if(miningInterval){
+    clearInterval(miningInterval);
+    miningInterval = null;
+    alert("Mining stopped.");
+  }
+});
+
+// -------------------- UPGRADE MINER --------------------
 document.getElementById("upgradeBtn").addEventListener("click", async () => {
   const user = supabase.auth.getUser().data.user;
   if(!user) return;
@@ -196,9 +184,7 @@ document.getElementById("upgradeBtn").addEventListener("click", async () => {
   loadUser();
 });
 
-// -----------------------------
-// 8️⃣ Withdraw (RPC)
-// -----------------------------
+// -------------------- WITHDRAW --------------------
 document.getElementById("withdrawBtn").addEventListener("click", async () => {
   const amount = parseInt(document.getElementById("withdrawAmount").value);
   const wallet = document.getElementById("walletAddress").value;
