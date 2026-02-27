@@ -91,17 +91,18 @@ hr{margin:15px 0;}
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Initialize Supabase
+// --- Initialize Supabase ---
 const supabase = createClient(
-  'https://qmcjmnugpujsqabqejpx.supabase.co', // your project URL
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo' // your anon key
+  'https://qmcjmnugpujsqabqejpx.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo'
 );
+
 window.supabase = supabase;
 
 let currentUser = null;
 let miningInterval = null;
 
-// --- Auth ---
+// --- Auth Functions ---
 window.signUp = async function() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -130,7 +131,7 @@ window.login = async function() {
   await loadUser();
 }
 
-// --- Load User ---
+// --- Load User Data ---
 async function loadUser() {
   const { data, error } = await supabase
     .from('users')
@@ -138,7 +139,7 @@ async function loadUser() {
     .eq('id', currentUser.id)
     .single();
 
-  if(error && error.code === 'PGRST116'){ // not found
+  if(error && error.code === 'PGRST116'){ // user not found
     await supabase.from('users').insert({ id: currentUser.id, balance:0, level:1 });
     document.getElementById("balance").innerText = "Balance: 0 VEXA";
     document.getElementById("level").innerText = "Level: 1";
@@ -185,7 +186,7 @@ window.logout = async function() {
   location.reload();
 }
 
-// --- Attach Event Listeners ---
+// --- Attach Button Event Listeners ---
 document.getElementById("signUpBtn").addEventListener("click", window.signUp);
 document.getElementById("loginBtn").addEventListener("click", window.login);
 document.getElementById("mineBtn").addEventListener("click", window.startMining);
