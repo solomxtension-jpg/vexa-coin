@@ -67,6 +67,7 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 <h3 id="balance">Balance: 0 VEXA</h3>
 <h4 id="level">Level: 1</h4>
 <h4 id="cps">Mining rate: 0 VEXA / 5s</h4>
+<h4 id="today">Mined today: 0 VEXA</h4>
 
 <button id="mineBtn">Start Mining</button>
 <button id="stopMineBtn" class="secondary">Stop Mining</button>
@@ -88,7 +89,7 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 // -----------------------------
-// Initialize Supabase
+// Supabase Init
 // -----------------------------
 const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
@@ -99,9 +100,11 @@ const emailInput = document.getElementById("email");
 const passwordInput = document.getElementById("password");
 const authBox = document.getElementById("authBox");
 const appBox = document.getElementById("appBox");
+
 const balanceText = document.getElementById("balance");
 const levelText = document.getElementById("level");
 const cpsText = document.getElementById("cps");
+const todayText = document.getElementById("today");
 
 let miningInterval = null;
 
@@ -136,7 +139,7 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
   location.reload();
 });
 
-// -------------------- LOAD USER + CPS --------------------
+// -------------------- LOAD USER + CPS + Today --------------------
 async function loadUser(){
   const user = supabase.auth.getUser().data.user;
   if(!user) return;
@@ -150,9 +153,9 @@ async function loadUser(){
 
   balanceText.innerText = "Balance: " + data.balance + " VEXA";
   levelText.innerText = "Level: " + data.level;
-
-  const cps = 1 * data.level; // base 1 coin × level
+  const cps = 1 * data.level;
   cpsText.innerText = `Mining rate: ${cps} VEXA / 5s`;
+  todayText.innerText = `Mined today: ${data.coins_today || 0} VEXA`;
 }
 
 // -------------------- START MINING --------------------
@@ -212,11 +215,12 @@ document.getElementById("withdrawBtn").addEventListener("click", async () => {
   loadUser();
 });
 
-// -------------------- OPTIONAL: LIVE CPS EVERY SECOND --------------------
+// -------------------- LIVE CPS + TODAY EVERY SECOND --------------------
 setInterval(() => {
   const level = parseInt(levelText.innerText.replace("Level: ","")) || 1;
   const cps = 1 * level;
   cpsText.innerText = `Mining rate: ${cps} VEXA / 5s`;
+  loadUser(); // update today dynamically
 }, 1000);
 
 </script>
