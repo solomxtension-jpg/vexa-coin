@@ -47,6 +47,22 @@ button.secondary{
   color:#fff;
 }
 hr{margin:15px 0; border-color:#00e5ff33;}
+
+#progressContainer{
+  width:90%;
+  height:20px;
+  background:#1c2747;
+  border-radius:10px;
+  margin:10px auto;
+  overflow:hidden;
+}
+#progressBar{
+  width:0%;
+  height:100%;
+  background:#00e5ff;
+  border-radius:10px;
+  transition: width 0.2s linear;
+}
 </style>
 </head>
 <body>
@@ -73,6 +89,10 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 <button id="stopMineBtn" class="secondary">Stop Mining</button>
 <button id="upgradeBtn">Upgrade Miner</button>
 
+<div id="progressContainer">
+  <div id="progressBar"></div>
+</div>
+
 <hr>
 
 <h4>Withdraw</h4>
@@ -88,9 +108,6 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-// -----------------------------
-// Supabase Init
-// -----------------------------
 const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
 
@@ -106,7 +123,10 @@ const levelText = document.getElementById("level");
 const cpsText = document.getElementById("cps");
 const todayText = document.getElementById("today");
 
+const progressBar = document.getElementById("progressBar");
+
 let miningInterval = null;
+let animationInterval = null;
 
 // -------------------- SIGNUP --------------------
 document.getElementById("signupBtn").addEventListener("click", async () => {
@@ -141,7 +161,7 @@ document.getElementById("logoutBtn").addEventListener("click", async () => {
   location.reload();
 });
 
-// -------------------- ENSURE USER ROW EXISTS --------------------
+// -------------------- ENSURE USER ROW --------------------
 async function ensureUserRow(){
   const user = supabase.auth.getUser().data.user;
   if(!user) return;
@@ -162,7 +182,7 @@ async function ensureUserRow(){
   }
 }
 
-// -------------------- LOAD USER + CPS + TODAY --------------------
+// -------------------- LOAD USER --------------------
 async function loadUser(){
   const user = supabase.auth.getUser().data.user;
   if(!user) return;
@@ -185,6 +205,15 @@ async function loadUser(){
 document.getElementById("mineBtn").addEventListener("click", () => {
   if(miningInterval) return;
 
+  // Animation interval for progress bar
+  let progress = 0;
+  animationInterval = setInterval(() => {
+    progress += 2; // increase progress every 100ms (approx 5s to fill)
+    if(progress >= 100) progress = 0;
+    progressBar.style.width = progress + "%";
+  }, 100);
+
+  // Mining RPC interval
   miningInterval = setInterval(async () => {
     const user = supabase.auth.getUser().data.user;
     if(!user) return;
@@ -195,7 +224,7 @@ document.getElementById("mineBtn").addEventListener("click", () => {
     loadUser();
   }, 5000);
 
-  alert("Mining started! Coins are added automatically.");
+  alert("Mining started!");
 });
 
 // -------------------- STOP MINING --------------------
@@ -203,11 +232,16 @@ document.getElementById("stopMineBtn").addEventListener("click", () => {
   if(miningInterval){
     clearInterval(miningInterval);
     miningInterval = null;
-    alert("Mining stopped.");
   }
+  if(animationInterval){
+    clearInterval(animationInterval);
+    animationInterval = null;
+  }
+  progressBar.style.width = "0%";
+  alert("Mining stopped.");
 });
 
-// -------------------- UPGRADE MINER --------------------
+// -------------------- UPGRADE --------------------
 document.getElementById("upgradeBtn").addEventListener("click", async () => {
   const user = supabase.auth.getUser().data.user;
   if(!user) return;
@@ -238,7 +272,7 @@ document.getElementById("withdrawBtn").addEventListener("click", async () => {
   loadUser();
 });
 
-// -------------------- LIVE CPS + TODAY UPDATE --------------------
+// -------------------- LIVE CPS UPDATE --------------------
 setInterval(() => {
   const level = parseInt(levelText.innerText.replace("Level: ","")) || 1;
   const cps = 1 * level;
