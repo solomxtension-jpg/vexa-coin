@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <title>VEXA Mining PRO</title>
 
-  <!-- Supabase JS v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
 
@@ -29,14 +26,12 @@
       box-shadow:0 0 25px rgba(0,229,255,.2);
       text-align:center;
     }
-    h2{margin-top:0}
     input{
       width:90%;
       padding:12px;
       margin:8px 0;
       border-radius:8px;
       border:none;
-      outline:none;
     }
     button{
       width:95%;
@@ -59,10 +54,8 @@
 <body>
 
 <div class="card">
-
   <h2>VEXA Mining PRO</h2>
 
-  <!-- AUTH -->
   <div id="authBox">
     <input id="email" type="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
@@ -70,76 +63,62 @@
     <button class="secondary" onclick="login()">Login</button>
   </div>
 
-  <!-- APP -->
   <div id="appBox" style="display:none">
     <h3>Logged in ✅</h3>
     <button onclick="logout()">Logout</button>
   </div>
-
 </div>
 
-<script>
-/* ===============================
-   SUPABASE CONFIG (DO NOT CHANGE)
-================================ */
-const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
-const SUPABASE_ANON_KEY =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
+<!-- ✅ SUPABASE MODULE SCRIPT -->
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+  const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
+  const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
 
-/* ===============================
-   AUTH FUNCTIONS
-================================ */
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function signUp(){
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
+  // 👇 expose functions to buttons
+  window.signUp = async function(){
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-  if(!email || !password){
-    alert("Enter email and password");
-    return;
+    if(!email || !password){
+      alert("Enter email and password");
+      return;
+    }
+
+    const { error } = await supabase.auth.signUp({ email, password });
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    alert("Signup successful. You can now login.");
   }
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password
-  });
+  window.login = async function(){
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value.trim();
 
-  if(error){
-    alert(error.message);
-    return;
+    const { error } =
+      await supabase.auth.signInWithPassword({ email, password });
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    document.getElementById("authBox").style.display = "none";
+    document.getElementById("appBox").style.display = "block";
   }
 
-  alert("Signup successful. Now login.");
-}
-
-async function login(){
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value.trim();
-
-  const { data, error } =
-    await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-  if(error){
-    alert(error.message);
-    return;
+  window.logout = async function(){
+    await supabase.auth.signOut();
+    location.reload();
   }
-
-  document.getElementById("authBox").style.display = "none";
-  document.getElementById("appBox").style.display = "block";
-}
-
-async function logout(){
-  await supabase.auth.signOut();
-  location.reload();
-}
 </script>
 
 </body>
