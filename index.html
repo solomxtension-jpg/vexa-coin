@@ -51,3 +51,182 @@
     hr{margin:15px 0; border-color:#00e5ff33;}
   </style>
 </head>
+
+<body>
+
+<div class="card">
+  <h2>VEXA Mining PRO</h2>
+
+  <!-- Authentication -->
+  <div id="authBox">
+    <input id="email" type="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button id="signupBtn">Sign Up</button>
+    <button id="loginBtn" class="secondary">Login</button>
+  </div>
+
+  <!-- App Section -->
+  <div id="appBox" style="display:none;">
+    <h3 id="balance">Balance: 0 VEXA</h3>
+    <h4 id="level">Level: 1</h4>
+
+    <button id="mineBtn">Start Mining</button>
+    <button id="upgradeBtn">Upgrade Miner</button>
+
+    <hr>
+
+    <h4>Withdraw</h4>
+    <input id="withdrawAmount" placeholder="Amount to withdraw">
+    <input id="walletAddress" placeholder="Wallet address">
+    <button id="withdrawBtn">Request Withdrawal</button>
+
+    <br><br>
+    <button id="logoutBtn">Logout</button>
+  </div>
+</div>
+
+<!-- Supabase v2 -->
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+  // -----------------------------
+  // 1️⃣ Initialize Supabase
+  // -----------------------------
+  const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
+  const authBox = document.getElementById("authBox");
+  const appBox = document.getElementById("appBox");
+
+  const balanceText = document.getElementById("balance");
+  const levelText = document.getElementById("level");
+
+  // -----------------------------
+  // 2️⃣ Signup
+  // -----------------------------
+  document.getElementById("signupBtn").addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if(!email || !password){
+      alert("Enter email and password");
+      return;
+    }
+
+    const { error } = await supabase.auth.signUp({ email, password });
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    alert("Signup successful. Now login.");
+  });
+
+  // -----------------------------
+  // 3️⃣ Login
+  // -----------------------------
+  document.getElementById("loginBtn").addEventListener("click", async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    // Show app section
+    authBox.style.display = "none";
+    appBox.style.display = "block";
+
+    // Load user data
+    loadUser();
+  });
+
+  // -----------------------------
+  // 4️⃣ Logout
+  // -----------------------------
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    location.reload();
+  });
+
+  // -----------------------------
+  // 5️⃣ Load user data
+  // -----------------------------
+  async function loadUser() {
+    const user = supabase.auth.getUser().data.user;
+    if(!user) return;
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if(error){
+      console.log("Error loading user:", error.message);
+      return;
+    }
+
+    balanceText.innerText = "Balance: " + data.balance + " VEXA";
+    levelText.innerText = "Level: " + data.level;
+  }
+
+  // -----------------------------
+  // 6️⃣ Mining button
+  // -----------------------------
+  document.getElementById("mineBtn").addEventListener("click", async () => {
+    const user = supabase.auth.getUser().data.user;
+    if(!user) return;
+
+    await supabase
+      .from('users')
+      .update({ balance: supabase.raw('balance + 1') })
+      .eq('id', user.id);
+
+    loadUser();
+  });
+
+  // -----------------------------
+  // 7️⃣ Upgrade button
+  // -----------------------------
+  document.getElementById("upgradeBtn").addEventListener("click", async () => {
+    const user = supabase.auth.getUser().data.user;
+    if(!user) return;
+
+    await supabase
+      .from('users')
+      .update({ level: supabase.raw('level + 1') })
+      .eq('id', user.id);
+
+    loadUser();
+  });
+
+  // -----------------------------
+  // 8️⃣ Withdraw button
+  // -----------------------------
+  document.getElementById("withdrawBtn").addEventListener("click", async () => {
+    const amount = parseInt(document.getElementById("withdrawAmount").value);
+    const wallet = document.getElementById("walletAddress").value;
+
+    if(!amount || !wallet){
+      alert("Enter amount and wallet");
+      return;
+    }
+
+    alert(`Withdrawal requested: ${amount} VEXA → ${wallet}`);
+    // Later you can implement Supabase RPC to store withdrawal requests
+  });
+
+</script>
+
+</body>
+</html>
