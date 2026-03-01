@@ -24,6 +24,7 @@ body {
   max-width: 400px;
   width: 100%;
   box-shadow: 0 0 25px rgba(0,229,255,0.25);
+  position: relative;
 }
 input, button {
   width: 100%;
@@ -67,7 +68,6 @@ button.secondary {
   to {opacity: 0; transform: translateY(-50px);}
 }
 </style>
-
 </head>
 <body>
 
@@ -88,7 +88,8 @@ button.secondary {
     <h2>Dashboard</h2>
     <p>Balance: <b><span id="balance">0</span></b> VEXA</p>
     <p>Mined Today: <b><span id="today">0</span></b></p>
-    <p>Mining Rate: <b><span id="rate">1</span></b></p>
+    <p>Level: <b><span id="level">1</span></b></p>
+    <p>Mining Rate: <b><span id="rate">1</span></b>/click</p>
 
     <button onclick="startMining()">⛏️ Start Mining</button>
     <button onclick="stopMining()" class="secondary">Stop Mining</button>
@@ -146,7 +147,7 @@ async function login() {
   document.getElementById("auth").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
 
-  loadUser();
+  await loadUser();
 }
 
 async function logout() {
@@ -160,7 +161,7 @@ LOAD USER DATA
 async function loadUser() {
   if (!currentUser) return;
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("users")
     .select("*")
     .eq("id", currentUser.id)
@@ -170,12 +171,14 @@ async function loadUser() {
     await supabase.from("users").insert({ id: currentUser.id, balance: 0, coins_today: 0, level: 1 });
     document.getElementById("balance").innerText = "0";
     document.getElementById("today").innerText = "0";
+    document.getElementById("level").innerText = "1";
     document.getElementById("rate").innerText = "1";
     return;
   }
 
   document.getElementById("balance").innerText = data.balance;
   document.getElementById("today").innerText = data.coins_today;
+  document.getElementById("level").innerText = data.level;
   document.getElementById("rate").innerText = data.level;
 }
 
@@ -189,7 +192,7 @@ async function startMining() {
   let progress = 0;
   progressInterval = setInterval(() => {
     progress += 2;
-    if (progress >= 100) progress = 0;
+    if (progress > 100) progress = 0;
     document.getElementById("progressBar").style.width = progress + "%";
   }, 100);
 
@@ -197,6 +200,7 @@ async function startMining() {
     const { error } = await supabase.rpc("mine_coin", { uid: currentUser.id });
     if (error) { document.getElementById("msg").innerText = error.message; return; }
     loadUser();
+    showFloatingCoin();
   }, 5000);
 }
 
@@ -216,6 +220,18 @@ async function upgrade() {
   const { error } = await supabase.rpc("upgrade_miner", { uid: currentUser.id });
   if (error) { document.getElementById("msg").innerText = error.message; return; }
   loadUser();
+}
+
+/* =====================
+FLOATING COIN ANIMATION
+===================== */
+function showFloatingCoin() {
+  const coin = document.createElement("div");
+  coin.className = "floating-coin";
+  coin.innerText = "🪙";
+  document.querySelector(".card").appendChild(coin);
+  coin.style.left = Math.random() * 80 + "%";
+  setTimeout(() => coin.remove(), 1000);
 }
 
 /* =====================
