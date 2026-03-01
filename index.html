@@ -1,183 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>VEXA Mining PRO</title>
+  <meta charset="UTF-8" />
+  <title>VEXA Mining</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
-body{
-  background:#0b0f1a;
-  color:#ffffff;
-  font-family:Arial, sans-serif;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-  margin:0;
-}
-.card{
-  background:#11182b;
-  padding:25px;
-  border-radius:16px;
-  width:360px;
-  box-shadow:0 0 25px rgba(0,229,255,.25);
-  text-align:center;
-}
-button{
-  width:100%;
-  padding:12px;
-  margin-top:10px;
-  border-radius:10px;
-  border:none;
-  background:#00e5ff;
-  color:#000;
-  font-weight:bold;
-  cursor:pointer;
-}
-button.secondary{
-  background:#1c2747;
-  color:#fff;
-}
-#progressBox{
-  width:100%;
-  height:16px;
-  background:#1c2747;
-  border-radius:10px;
-  margin-top:10px;
-  overflow:hidden;
-}
-#progress{
-  height:100%;
-  width:0%;
-  background:#00e5ff;
-}
-.coin{
-  position:absolute;
-  font-size:20px;
-  animation:float 1s forwards;
-}
-@keyframes float{
-  from{opacity:1; transform:translateY(0);}
-  to{opacity:0; transform:translateY(-40px);}
-}
-</style>
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0b0f1a;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
+    }
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      width: 90%;
+      max-width: 300px;
+    }
+    button {
+      background: #4f46e5;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .card {
+      background: #111827;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="card">
+  <h1>⛏️ VEXA Mining</h1>
 
-  <!-- LOGIN -->
-  <div id="loginBox">
-    <h2>VEXA Mining PRO</h2>
-    <button onclick="login()">Login (Demo)</button>
+  <!-- AUTH -->
+  <div id="auth" class="card">
+    <h2>Login / Signup</h2>
+    <input id="email" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
+    <button onclick="signUp()">Sign Up</button>
+    <button onclick="login()">Login</button>
+    <p id="authMsg"></p>
   </div>
 
-  <!-- APP -->
-  <div id="appBox" style="display:none;">
-    <h3 id="balance">Balance: 0 VEXA</h3>
-    <h4 id="level">Level: 1</h4>
-    <h4 id="rate">Rate: 1 VEXA / 5s</h4>
-    <h4 id="today">Mined today: 0</h4>
+  <!-- DASHBOARD -->
+  <div id="dashboard" class="card hidden">
+    <h2>Dashboard</h2>
+    <p><strong>Balance:</strong> <span id="balance">0</span> VEXA</p>
+    <p><strong>Mined Today:</strong> <span id="today">0</span></p>
+    <p><strong>Mining Rate:</strong> <span id="rate">1</span>/click</p>
 
-    <button onclick="startMining()">Start Mining</button>
-    <button onclick="stopMining()" class="secondary">Stop Mining</button>
-    <button onclick="upgrade()">Upgrade Miner (10 VEXA)</button>
+    <button onclick="mine()">⛏️ Start Mining</button>
+    <button onclick="upgrade()">⚡ Upgrade Miner</button>
+    <button onclick="logout()">Logout</button>
 
-    <div id="progressBox">
-      <div id="progress"></div>
-    </div>
-
-    <button onclick="logout()" class="secondary">Logout</button>
+    <p id="msg"></p>
   </div>
-
-</div>
 
 <script>
-/* ===== GAME STATE ===== */
-let balance = 0;
-let level = 1;
-let minedToday = 0;
-let miningTimer = null;
-let progressTimer = null;
+/* =========================
+   SUPABASE CONFIG
+========================= */
+const supabaseUrl = "https://qmcjmnugpujsqabqejpx.supabase.co";
+const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
 
-/* ===== ELEMENTS ===== */
-const balanceEl = document.getElementById("balance");
-const levelEl = document.getElementById("level");
-const rateEl = document.getElementById("rate");
-const todayEl = document.getElementById("today");
-const progressEl = document.getElementById("progress");
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-/* ===== UI UPDATE ===== */
-function updateUI(){
-  balanceEl.innerText = "Balance: " + balance + " VEXA";
-  levelEl.innerText = "Level: " + level;
-  rateEl.innerText = "Rate: " + level + " VEXA / 5s";
-  todayEl.innerText = "Mined today: " + minedToday;
+/* =========================
+   AUTH FUNCTIONS
+========================= */
+async function signUp() {
+  const email = email.value;
+  const password = password.value;
+
+  const { error } = await supabase.auth.signUp({ email, password });
+  authMsg.innerText = error ? error.message : "Signup successful. Login now.";
 }
 
-/* ===== LOGIN ===== */
-function login(){
-  document.getElementById("loginBox").style.display = "none";
-  document.getElementById("appBox").style.display = "block";
-  updateUI();
+async function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    authMsg.innerText = error.message;
+    return;
+  }
+
+  authMsg.innerText = "";
+  document.getElementById("auth").classList.add("hidden");
+  document.getElementById("dashboard").classList.remove("hidden");
+  loadUser();
 }
 
-/* ===== LOGOUT ===== */
-function logout(){
+async function logout() {
+  await supabase.auth.signOut();
   location.reload();
 }
 
-/* ===== START MINING ===== */
-function startMining(){
-  if(miningTimer) return;
+/* =========================
+   LOAD USER DATA
+========================= */
+async function loadUser() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
 
-  let progress = 0;
-  progressTimer = setInterval(()=>{
-    progress += 2;
-    if(progress >= 100) progress = 0;
-    progressEl.style.width = progress + "%";
-  },100);
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", user.id)
+    .single();
 
-  miningTimer = setInterval(()=>{
-    balance += level;
-    minedToday += level;
-    updateUI();
-    spawnCoin();
-  },5000);
-}
-
-/* ===== STOP MINING ===== */
-function stopMining(){
-  clearInterval(miningTimer);
-  clearInterval(progressTimer);
-  miningTimer = null;
-  progressTimer = null;
-  progressEl.style.width = "0%";
-}
-
-/* ===== UPGRADE ===== */
-function upgrade(){
-  if(balance < 10){
-    alert("You need 10 VEXA to upgrade");
+  if (error) {
+    msg.innerText = error.message;
     return;
   }
-  balance -= 10;
-  level += 1;
-  updateUI();
+
+  balance.innerText = data.balance;
+  today.innerText = data.coins_today;
+  rate.innerText = data.mining_rate;
 }
 
-/* ===== FLOATING COIN ===== */
-function spawnCoin(){
-  const coin = document.createElement("div");
-  coin.className = "coin";
-  coin.innerText = "🪙";
-  const box = document.querySelector(".card").getBoundingClientRect();
-  coin.style.left = box.left + box.width/2 + "px";
-  coin.style.top = box.top + box.height/2 + "px";
-  document.body.appendChild(coin);
-  setTimeout(()=>coin.remove(),1000);
+/* =========================
+   MINING
+========================= */
+async function mine() {
+  const { error } = await supabase.rpc("mine_coin");
+  if (error) {
+    msg.innerText = error.message;
+    return;
+  }
+  loadUser();
 }
+
+/* =========================
+   UPGRADE
+========================= */
+async function upgrade() {
+  const { error } = await supabase.rpc("upgrade_miner");
+  if (error) {
+    msg.innerText = error.message;
+    return;
+  }
+  loadUser();
+}
+
+/* =========================
+   AUTO LOGIN CHECK
+========================= */
+(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    document.getElementById("auth").classList.add("hidden");
+    document.getElementById("dashboard").classList.remove("hidden");
+    loadUser();
+  }
+})();
 </script>
 
 </body>
