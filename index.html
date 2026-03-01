@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>VEXA Mining PRO</title>
-<link rel="manifest" href="manifest.json">
 
 <style>
 body{
@@ -20,19 +19,12 @@ body{
   background:#11182b;
   padding:25px;
   border-radius:16px;
-  width:350px;
-  box-shadow:0 0 25px rgba(0,229,255,.2);
+  width:360px;
+  box-shadow:0 0 25px rgba(0,229,255,.25);
   text-align:center;
 }
-input{
-  width:90%;
-  padding:12px;
-  margin:8px 0;
-  border-radius:8px;
-  border:none;
-}
 button{
-  width:95%;
+  width:100%;
   padding:12px;
   margin-top:10px;
   border-radius:10px;
@@ -46,29 +38,27 @@ button.secondary{
   background:#1c2747;
   color:#fff;
 }
-hr{margin:15px 0; border-color:#00e5ff33;}
-#progressContainer{
-  width:90%;
-  height:18px;
+#progressBox{
+  width:100%;
+  height:16px;
   background:#1c2747;
   border-radius:10px;
-  margin:10px auto;
+  margin-top:10px;
   overflow:hidden;
 }
-#progressBar{
-  width:0%;
+#progress{
   height:100%;
+  width:0%;
   background:#00e5ff;
-  transition:width 0.2s linear;
 }
-.floating-coin{
+.coin{
   position:absolute;
   font-size:20px;
-  animation:floatUp 1s linear forwards;
+  animation:float 1s forwards;
 }
-@keyframes floatUp{
+@keyframes float{
   from{opacity:1; transform:translateY(0);}
-  to{opacity:0; transform:translateY(-50px);}
+  to{opacity:0; transform:translateY(-40px);}
 }
 </style>
 </head>
@@ -76,100 +66,97 @@ hr{margin:15px 0; border-color:#00e5ff33;}
 <body>
 
 <div class="card">
-<h2>VEXA Mining PRO</h2>
 
-<div id="authBox">
-<input placeholder="Email (demo)">
-<input type="password" placeholder="Password (demo)">
-<button onclick="login()">Login</button>
-</div>
+  <!-- LOGIN -->
+  <div id="loginBox">
+    <h2>VEXA Mining PRO</h2>
+    <button onclick="login()">Login (Demo)</button>
+  </div>
 
-<div id="appBox" style="display:none;">
-<h3 id="balance">Balance: 0 VEXA</h3>
-<h4 id="level">Level: 1</h4>
-<h4 id="rate">Mining rate: 1 VEXA / 5s</h4>
-<h4 id="today">Mined today: 0 VEXA</h4>
+  <!-- APP -->
+  <div id="appBox" style="display:none;">
+    <h3 id="balance">Balance: 0 VEXA</h3>
+    <h4 id="level">Level: 1</h4>
+    <h4 id="rate">Rate: 1 VEXA / 5s</h4>
+    <h4 id="today">Mined today: 0</h4>
 
-<button onclick="startMining()">Start Mining</button>
-<button onclick="stopMining()" class="secondary">Stop Mining</button>
-<button onclick="upgrade()">Upgrade Miner (10 VEXA)</button>
+    <button onclick="startMining()">Start Mining</button>
+    <button onclick="stopMining()" class="secondary">Stop Mining</button>
+    <button onclick="upgrade()">Upgrade Miner (10 VEXA)</button>
 
-<div id="progressContainer">
-  <div id="progressBar"></div>
-</div>
+    <div id="progressBox">
+      <div id="progress"></div>
+    </div>
 
-<hr>
+    <button onclick="logout()" class="secondary">Logout</button>
+  </div>
 
-<button onclick="logout()">Logout</button>
-</div>
 </div>
 
 <script>
-/* ===== TEMPORARY FRONTEND MODE ===== */
-
+/* ===== GAME STATE ===== */
 let balance = 0;
 let level = 1;
-let coinsToday = 0;
-let miningInterval = null;
-let progressInterval = null;
+let minedToday = 0;
+let miningTimer = null;
+let progressTimer = null;
 
-const balanceText = document.getElementById("balance");
-const levelText = document.getElementById("level");
-const rateText = document.getElementById("rate");
-const todayText = document.getElementById("today");
-const progressBar = document.getElementById("progressBar");
+/* ===== ELEMENTS ===== */
+const balanceEl = document.getElementById("balance");
+const levelEl = document.getElementById("level");
+const rateEl = document.getElementById("rate");
+const todayEl = document.getElementById("today");
+const progressEl = document.getElementById("progress");
 
-/* LOGIN (fake for now) */
+/* ===== UI UPDATE ===== */
+function updateUI(){
+  balanceEl.innerText = "Balance: " + balance + " VEXA";
+  levelEl.innerText = "Level: " + level;
+  rateEl.innerText = "Rate: " + level + " VEXA / 5s";
+  todayEl.innerText = "Mined today: " + minedToday;
+}
+
+/* ===== LOGIN ===== */
 function login(){
-  document.getElementById("authBox").style.display="none";
-  document.getElementById("appBox").style.display="block";
+  document.getElementById("loginBox").style.display = "none";
+  document.getElementById("appBox").style.display = "block";
   updateUI();
 }
 
-/* LOGOUT */
+/* ===== LOGOUT ===== */
 function logout(){
   location.reload();
 }
 
-/* UPDATE UI */
-function updateUI(){
-  balanceText.innerText = "Balance: " + balance + " VEXA";
-  levelText.innerText = "Level: " + level;
-  rateText.innerText = "Mining rate: " + level + " VEXA / 5s";
-  todayText.innerText = "Mined today: " + coinsToday + " VEXA";
-}
-
-/* START MINING */
+/* ===== START MINING ===== */
 function startMining(){
-  if(miningInterval) return;
+  if(miningTimer) return;
 
   let progress = 0;
-  progressInterval = setInterval(()=>{
+  progressTimer = setInterval(()=>{
     progress += 2;
     if(progress >= 100) progress = 0;
-    progressBar.style.width = progress + "%";
+    progressEl.style.width = progress + "%";
   },100);
 
-  miningInterval = setInterval(()=>{
+  miningTimer = setInterval(()=>{
     balance += level;
-    coinsToday += level;
+    minedToday += level;
     updateUI();
     spawnCoin();
   },5000);
-
-  alert("Mining started");
 }
 
-/* STOP MINING */
+/* ===== STOP MINING ===== */
 function stopMining(){
-  clearInterval(miningInterval);
-  clearInterval(progressInterval);
-  miningInterval = null;
-  progressInterval = null;
-  progressBar.style.width = "0%";
+  clearInterval(miningTimer);
+  clearInterval(progressTimer);
+  miningTimer = null;
+  progressTimer = null;
+  progressEl.style.width = "0%";
 }
 
-/* UPGRADE */
+/* ===== UPGRADE ===== */
 function upgrade(){
   if(balance < 10){
     alert("You need 10 VEXA to upgrade");
@@ -180,14 +167,14 @@ function upgrade(){
   updateUI();
 }
 
-/* FLOATING COIN */
+/* ===== FLOATING COIN ===== */
 function spawnCoin(){
   const coin = document.createElement("div");
-  coin.className = "floating-coin";
+  coin.className = "coin";
   coin.innerText = "🪙";
-  const rect = progressBar.getBoundingClientRect();
-  coin.style.left = rect.left + Math.random()*rect.width + "px";
-  coin.style.top = rect.top - 20 + "px";
+  const box = document.querySelector(".card").getBoundingClientRect();
+  coin.style.left = box.left + box.width/2 + "px";
+  coin.style.top = box.top + box.height/2 + "px";
   document.body.appendChild(coin);
   setTimeout(()=>coin.remove(),1000);
 }
