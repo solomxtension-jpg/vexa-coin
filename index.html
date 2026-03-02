@@ -22,8 +22,8 @@
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const supabaseUrl = "YOUR_SUPABASE_URL";
-    const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
+    const supabaseUrl = "https://qmcjmnugpujsqabqejpx.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
     const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
 
     let userId = null;
@@ -31,7 +31,6 @@
     const statusElement = document.getElementById("status");
     const mineBtn = document.getElementById("mineBtn");
 
-    // --- IndexedDB for Offline Mining ---
     async function openIndexedDB() {
       return new Promise((resolve, reject) => {
         const request = indexedDB.open('vexa-db', 1);
@@ -46,7 +45,6 @@
       });
     }
 
-    // --- Auth + Init ---
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -72,7 +70,6 @@
       coinElement.textContent = data.coins || 0;
     }
 
-    // --- Mining Button ---
     mineBtn.addEventListener("click", async () => {
       statusElement.textContent = "Mining...";
       mineBtn.disabled = true;
