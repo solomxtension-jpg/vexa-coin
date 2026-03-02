@@ -22,78 +22,101 @@
   <!-- Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // --- 1. Supabase Setup ---
     const supabaseUrl = "YOUR_SUPABASE_URL";
     const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
     const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
 
     let userId = null;
-    let coinElement = document.getElementById("coins");
-    let statusElement = document.getElementById("status");
-    let mineBtn = document.getElementById("mineBtn");
+    const coinElement = document.getElementById("coins");
+    const statusElement = document.getElementById("status");
+    const mineBtn = document.getElementById("mineBtn");
 
-    // --- 2. Auth Check ---
+    // --- IndexedDB for Offline Mining ---
+    async function openIndexedDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('vexa-db', 1);
+        request.onupgradeneeded = e => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('pending')) {
+            db.createObjectStore('pending', { keyPath: 'id', autoIncrement: true });
+          }
+        };
+        request.onsuccess = e => resolve(e.target.result);
+        request.onerror = e => reject(e.target.error);
+      });
+    }
+
+    // --- Auth + Init ---
     async function init() {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session) {
-        // If no session, sign in anonymously
         const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'github' });
-        console.log(data, error);
+        if (error) console.error(error);
         return;
       }
-      
       userId = session.user.id;
       await loadCoins();
     }
 
-    // --- 3. Load Coins ---
     async function loadCoins() {
       const { data, error } = await supabase
         .from('users')
         .select('coins')
         .eq('id', userId)
         .single();
-
       if (error) {
         console.error(error);
         statusElement.textContent = "Error loading coins";
         return;
       }
-
       coinElement.textContent = data.coins || 0;
     }
 
-    // --- 4. Mine Coins ---
+    // --- Mining Button ---
     mineBtn.addEventListener("click", async () => {
       statusElement.textContent = "Mining...";
       mineBtn.disabled = true;
-
-      // Simulate mining (add random 1-5 coins)
       const minedCoins = Math.floor(Math.random() * 5) + 1;
 
-      // Update coins in Supabase
-      const { data, error } = await supabase
-        .from('users')
-        .update({ coins: supabase.raw('coins + ?', [minedCoins]) })
-        .eq('id', userId)
-        .select()
-        .single();
-
-      if (error) {
-        console.error(error);
-        statusElement.textContent = "Error mining coins";
-        mineBtn.disabled = false;
-        return;
+      if (navigator.onLine) {
+        const { data, error } = await supabase
+          .from('users')
+          .update({ coins: supabase.raw('coins + ?', [minedCoins]) })
+          .eq('id', userId)
+          .select()
+          .single();
+        if (error) {
+          console.error(error);
+          statusElement.textContent = "Error mining coins online";
+          mineBtn.disabled = false;
+          return;
+        }
+        coinElement.textContent = data.coins;
+        statusElement.textContent = `You mined ${minedCoins} coins!`;
+      } else {
+        const db = await openIndexedDB();
+        const tx = db.transaction('pending', 'readwrite');
+        tx.objectStore('pending').add({ userId, minedCoins, timestamp: Date.now() });
+        await tx.done;
+        let currentCoins = parseInt(coinElement.textContent);
+        currentCoins += minedCoins;
+        coinElement.textContent = currentCoins;
+        statusElement.textContent = `Offline: ${minedCoins} coins mined! Will sync later.`;
       }
 
-      coinElement.textContent = data.coins;
-      statusElement.textContent = `You mined ${minedCoins} coins!`;
       mineBtn.disabled = false;
     });
 
-    // --- 5. Initialize ---
     window.addEventListener('load', init);
+  </script>
+
+  <!-- Register Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(() => console.log('Service Worker Registered'))
+        .catch(err => console.error('SW registration failed', err));
+    }
   </script>
 </body>
 </html>
