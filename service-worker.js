@@ -1,122 +1,64 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VEXA Mining App</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    #coins { font-size: 2em; margin: 20px 0; }
-    button { padding: 10px 20px; font-size: 1em; cursor: pointer; }
-    #status { margin-top: 20px; color: green; }
-  </style>
-</head>
-<body>
+const CACHE_NAME = 'vexa-cache-v1';
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+];
 
-  <h1>VEXA Mining App</h1>
-  <div>Your Coins: <span id="coins">0</span></div>
-  <button id="mineBtn">Mine Coins</button>
-  <div id="status"></div>
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE)));
+  self.skipWaiting();
+});
 
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const supabaseUrl = "YOUR_SUPABASE_URL";
-    const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
 
-    let userId = null;
-    const coinElement = document.getElementById("coins");
-    const statusElement = document.getElementById("status");
-    const mineBtn = document.getElementById("mineBtn");
+self.addEventListener('fetch', event => {
+  event.respondWith(caches.match(event.request).then(res => res || fetch(event.request)));
+});
 
-    // --- IndexedDB for Offline Mining ---
-    async function openIndexedDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open('vexa-db', 1);
-        request.onupgradeneeded = e => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('pending')) {
-            db.createObjectStore('pending', { keyPath: 'id', autoIncrement: true });
-          }
-        };
-        request.onsuccess = e => resolve(e.target.result);
-        request.onerror = e => reject(e.target.error);
+// --- Sync Offline Mining ---
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-mining') {
+    event.waitUntil(syncMining());
+  }
+});
+
+async function syncMining() {
+  const db = await openIndexedDB();
+  const tx = db.transaction('pending', 'readwrite');
+  const store = tx.objectStore('pending');
+  const allItems = await store.getAll();
+
+  for (let item of allItems) {
+    try {
+      await fetch('https://YOUR_SUPABASE_PROJECT_URL/functions/v1/sync-mining', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY`
+        },
+        body: JSON.stringify(item)
       });
+      store.delete(item.id);
+    } catch (err) {
+      console.error('Sync failed', err);
     }
+  }
+  await tx.done;
+}
 
-    // --- Auth + Init ---
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'github' });
-        if (error) console.error(error);
-        return;
+function openIndexedDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('vexa-db', 1);
+    request.onupgradeneeded = e => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('pending')) {
+        db.createObjectStore('pending', { keyPath: 'id', autoIncrement: true });
       }
-      userId = session.user.id;
-      await loadCoins();
-    }
-
-    async function loadCoins() {
-      const { data, error } = await supabase
-        .from('users')
-        .select('coins')
-        .eq('id', userId)
-        .single();
-      if (error) {
-        console.error(error);
-        statusElement.textContent = "Error loading coins";
-        return;
-      }
-      coinElement.textContent = data.coins || 0;
-    }
-
-    // --- Mining Button ---
-    mineBtn.addEventListener("click", async () => {
-      statusElement.textContent = "Mining...";
-      mineBtn.disabled = true;
-      const minedCoins = Math.floor(Math.random() * 5) + 1;
-
-      if (navigator.onLine) {
-        const { data, error } = await supabase
-          .from('users')
-          .update({ coins: supabase.raw('coins + ?', [minedCoins]) })
-          .eq('id', userId)
-          .select()
-          .single();
-        if (error) {
-          console.error(error);
-          statusElement.textContent = "Error mining coins online";
-          mineBtn.disabled = false;
-          return;
-        }
-        coinElement.textContent = data.coins;
-        statusElement.textContent = `You mined ${minedCoins} coins!`;
-      } else {
-        const db = await openIndexedDB();
-        const tx = db.transaction('pending', 'readwrite');
-        tx.objectStore('pending').add({ userId, minedCoins, timestamp: Date.now() });
-        await tx.done;
-        let currentCoins = parseInt(coinElement.textContent);
-        currentCoins += minedCoins;
-        coinElement.textContent = currentCoins;
-        statusElement.textContent = `Offline: ${minedCoins} coins mined! Will sync later.`;
-      }
-
-      mineBtn.disabled = false;
-    });
-
-    window.addEventListener('load', init);
-  </script>
-
-  <!-- Register Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(() => console.log('Service Worker Registered'))
-        .catch(err => console.error('SW registration failed', err));
-    }
-  </script>
-</body>
-</html>
+    };
+    request.onsuccess = e => resolve(e.target.result);
+    request.onerror = e => reject(e.target.error);
+  });
+}
