@@ -46,8 +46,9 @@ button.secondary {
 button:disabled {
   opacity: 0.5;
 }
-.hidden { display: none; }
-
+.hidden {
+  display: none;
+}
 .floating-coin {
   position: absolute;
   font-size: 22px;
@@ -59,6 +60,7 @@ button:disabled {
 }
 </style>
 </head>
+
 <body>
 
 <div class="card">
@@ -67,7 +69,7 @@ button:disabled {
   <div id="auth">
     <h2>VEXA Mining PRO</h2>
     <input id="emailInput" type="email" placeholder="Email">
-    <input id="passwordInput" type="password" placeholder="Password">
+    <input id="passwordInput" type="password" placeholder="Password (min 6 chars)">
     <button onclick="signUp()">Sign Up</button>
     <button onclick="login()">Login</button>
     <p id="authMsg"></p>
@@ -76,7 +78,6 @@ button:disabled {
   <!-- APP -->
   <div id="app" class="hidden">
     <h2>Dashboard</h2>
-
     <p>Balance: <b><span id="balance">0</span></b> VEXA</p>
     <p>Mined Today: <b><span id="today">0</span></b></p>
     <p>Level: <b><span id="level">1</span></b></p>
@@ -96,9 +97,12 @@ button:disabled {
 SUPABASE CONFIG
 ===================== */
 const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
-const SUPABASE_KEY = "YOUR_ANON_KEY_HERE"; // keep anon key only
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
 /* =====================
 STATE
@@ -110,23 +114,39 @@ let isMining = false;
 AUTH
 ===================== */
 async function signUp() {
-  const email = emailInput.value;
-  const password = passwordInput.value;
-  const { error } = await supabase.auth.signUp({ email, password });
-  authMsg.innerText = error ? error.message : "Signup successful. Login now.";
+  authMsg.innerText = "Signing up...";
+
+  const { error } = await supabase.auth.signUp({
+    email: emailInput.value,
+    password: passwordInput.value
+  });
+
+  if (error) {
+    authMsg.innerText = "❌ " + error.message;
+  } else {
+    authMsg.innerText = "✅ Signup successful. Now login.";
+  }
 }
 
 async function login() {
+  authMsg.innerText = "Logging in...";
+
   const { data, error } = await supabase.auth.signInWithPassword({
     email: emailInput.value,
     password: passwordInput.value
   });
 
-  if (error) return authMsg.innerText = error.message;
+  if (error) {
+    authMsg.innerText = "❌ " + error.message;
+    return;
+  }
 
   currentUser = data.user;
-  auth.classList.add("hidden");
-  app.classList.remove("hidden");
+  authMsg.innerText = "✅ Login successful";
+
+  document.getElementById("auth").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+
   loadUser();
 }
 
@@ -165,7 +185,7 @@ async function loadUser() {
 TAP TO MINE
 ===================== */
 async function tapMine() {
-  if (!currentUser || isMining) return;
+  if (isMining) return;
 
   isMining = true;
   mineBtn.disabled = true;
@@ -176,17 +196,17 @@ async function tapMine() {
   });
 
   if (error) {
-    msg.innerText = error.message;
+    msg.innerText = "❌ " + error.message;
   } else {
     showFloatingCoin();
-    await loadUser();
-    msg.innerText = "⛏️ +VEXA mined!";
+    loadUser();
+    msg.innerText = "⛏️ Coin mined!";
   }
 
   setTimeout(() => {
     isMining = false;
     mineBtn.disabled = false;
-  }, 500);
+  }, 400);
 }
 
 /* =====================
@@ -197,7 +217,7 @@ async function upgrade() {
     uid: currentUser.id
   });
 
-  if (error) msg.innerText = error.message;
+  if (error) msg.innerText = "❌ " + error.message;
   else loadUser();
 }
 
