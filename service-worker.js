@@ -33,11 +33,11 @@ async function syncMining() {
 
   for (let item of allItems) {
     try {
-      await fetch('https://YOUR_SUPABASE_PROJECT_URL/functions/v1/sync-mining', {
+      await fetch('https://qmcjmnugpujsqabqejpx.supabase.co/functions/v1/swift-handler', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY`
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTU0MTI0NCwiZXhwIjoyMDg3MTE3MjQ0fQ.lSApAyziNInPAyW7FZis1zoxm_vYTp9baB3hTUrWVzs`
         },
         body: JSON.stringify(item)
       });
