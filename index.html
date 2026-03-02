@@ -1,119 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VEXA Mining App</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-    #coins { font-size: 2em; margin: 20px 0; }
-    button { padding: 10px 20px; font-size: 1em; cursor: pointer; }
-    #status { margin-top: 20px; color: green; }
-  </style>
+<meta charset="UTF-8">
+<title>VEXA Mining PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body {
+  background: #0b0f1a;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: #111827;
+  padding: 25px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 0 25px rgba(0,229,255,0.25);
+  position: relative;
+}
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin: 6px 0;
+  border-radius: 8px;
+  border: none;
+}
+button {
+  background: #22d3ee;
+  color: black;
+  font-weight: bold;
+  cursor: pointer;
+}
+button.secondary {
+  background: #1c2747;
+  color: white;
+}
+button:disabled {
+  opacity: 0.5;
+}
+.hidden { display: none; }
+
+.floating-coin {
+  position: absolute;
+  font-size: 22px;
+  animation: floatUp 1s forwards;
+}
+@keyframes floatUp {
+  from {opacity: 1; transform: translateY(0);}
+  to {opacity: 0; transform: translateY(-60px);}
+}
+</style>
 </head>
 <body>
 
-  <h1>VEXA Mining App</h1>
-  <div>Your Coins: <span id="coins">0</span></div>
-  <button id="mineBtn">Mine Coins</button>
-  <div id="status"></div>
+<div class="card">
 
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-    const supabaseUrl = "https://qmcjmnugpujsqabqejpx.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+  <!-- AUTH -->
+  <div id="auth">
+    <h2>VEXA Mining PRO</h2>
+    <input id="emailInput" type="email" placeholder="Email">
+    <input id="passwordInput" type="password" placeholder="Password">
+    <button onclick="signUp()">Sign Up</button>
+    <button onclick="login()">Login</button>
+    <p id="authMsg"></p>
+  </div>
 
-    let userId = null;
-    const coinElement = document.getElementById("coins");
-    const statusElement = document.getElementById("status");
-    const mineBtn = document.getElementById("mineBtn");
+  <!-- APP -->
+  <div id="app" class="hidden">
+    <h2>Dashboard</h2>
 
-    async function openIndexedDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open('vexa-db', 1);
-        request.onupgradeneeded = e => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('pending')) {
-            db.createObjectStore('pending', { keyPath: 'id', autoIncrement: true });
-          }
-        };
-        request.onsuccess = e => resolve(e.target.result);
-        request.onerror = e => reject(e.target.error);
-      });
-    }
+    <p>Balance: <b><span id="balance">0</span></b> VEXA</p>
+    <p>Mined Today: <b><span id="today">0</span></b></p>
+    <p>Level: <b><span id="level">1</span></b></p>
+    <p>Tap Power: <b><span id="rate">1</span></b> / tap</p>
 
-    async function init() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        const { data, error } = await supabase.auth.signInWithOAuth({ provider: 'github' });
-        if (error) console.error(error);
-        return;
-      }
-      userId = session.user.id;
-      await loadCoins();
-    }
+    <button id="mineBtn" onclick="tapMine()">⛏️ TAP TO MINE</button>
+    <button onclick="upgrade()" class="secondary">⚡ Upgrade Miner (10 VEXA)</button>
+    <button onclick="logout()" class="secondary">Logout</button>
 
-    async function loadCoins() {
-      const { data, error } = await supabase
-        .from('users')
-        .select('coins')
-        .eq('id', userId)
-        .single();
-      if (error) {
-        console.error(error);
-        statusElement.textContent = "Error loading coins";
-        return;
-      }
-      coinElement.textContent = data.coins || 0;
-    }
+    <p id="msg"></p>
+  </div>
 
-    mineBtn.addEventListener("click", async () => {
-      statusElement.textContent = "Mining...";
-      mineBtn.disabled = true;
-      const minedCoins = Math.floor(Math.random() * 5) + 1;
+</div>
 
-      if (navigator.onLine) {
-        const { data, error } = await supabase
-          .from('users')
-          .update({ coins: supabase.raw('coins + ?', [minedCoins]) })
-          .eq('id', userId)
-          .select()
-          .single();
-        if (error) {
-          console.error(error);
-          statusElement.textContent = "Error mining coins online";
-          mineBtn.disabled = false;
-          return;
-        }
-        coinElement.textContent = data.coins;
-        statusElement.textContent = `You mined ${minedCoins} coins!`;
-      } else {
-        const db = await openIndexedDB();
-        const tx = db.transaction('pending', 'readwrite');
-        tx.objectStore('pending').add({ userId, minedCoins, timestamp: Date.now() });
-        await tx.done;
-        let currentCoins = parseInt(coinElement.textContent);
-        currentCoins += minedCoins;
-        coinElement.textContent = currentCoins;
-        statusElement.textContent = `Offline: ${minedCoins} coins mined! Will sync later.`;
-      }
+<script>
+/* =====================
+SUPABASE CONFIG
+===================== */
+const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
+const SUPABASE_KEY = "YOUR_ANON_KEY_HERE"; // keep anon key only
 
-      mineBtn.disabled = false;
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* =====================
+STATE
+===================== */
+let currentUser = null;
+let isMining = false;
+
+/* =====================
+AUTH
+===================== */
+async function signUp() {
+  const email = emailInput.value;
+  const password = passwordInput.value;
+  const { error } = await supabase.auth.signUp({ email, password });
+  authMsg.innerText = error ? error.message : "Signup successful. Login now.";
+}
+
+async function login() {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: emailInput.value,
+    password: passwordInput.value
+  });
+
+  if (error) return authMsg.innerText = error.message;
+
+  currentUser = data.user;
+  auth.classList.add("hidden");
+  app.classList.remove("hidden");
+  loadUser();
+}
+
+async function logout() {
+  await supabase.auth.signOut();
+  location.reload();
+}
+
+/* =====================
+LOAD USER
+===================== */
+async function loadUser() {
+  const { data } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", currentUser.id)
+    .single();
+
+  if (!data) {
+    await supabase.from("users").insert({
+      id: currentUser.id,
+      balance: 0,
+      coins_today: 0,
+      level: 1
     });
+    return loadUser();
+  }
 
-    window.addEventListener('load', init);
-  </script>
+  balance.innerText = data.balance;
+  today.innerText = data.coins_today;
+  level.innerText = data.level;
+  rate.innerText = data.level;
+}
 
-  <!-- Register Service Worker -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(() => console.log('Service Worker Registered'))
-        .catch(err => console.error('SW registration failed', err));
-    }
-  </script>
+/* =====================
+TAP TO MINE
+===================== */
+async function tapMine() {
+  if (!currentUser || isMining) return;
+
+  isMining = true;
+  mineBtn.disabled = true;
+  msg.innerText = "Mining...";
+
+  const { error } = await supabase.rpc("mine_coin", {
+    uid: currentUser.id
+  });
+
+  if (error) {
+    msg.innerText = error.message;
+  } else {
+    showFloatingCoin();
+    await loadUser();
+    msg.innerText = "⛏️ +VEXA mined!";
+  }
+
+  setTimeout(() => {
+    isMining = false;
+    mineBtn.disabled = false;
+  }, 500);
+}
+
+/* =====================
+UPGRADE
+===================== */
+async function upgrade() {
+  const { error } = await supabase.rpc("upgrade_miner", {
+    uid: currentUser.id
+  });
+
+  if (error) msg.innerText = error.message;
+  else loadUser();
+}
+
+/* =====================
+ANIMATION
+===================== */
+function showFloatingCoin() {
+  const coin = document.createElement("div");
+  coin.className = "floating-coin";
+  coin.innerText = "🪙";
+  coin.style.left = Math.random() * 80 + "%";
+  document.querySelector(".card").appendChild(coin);
+  setTimeout(() => coin.remove(), 1000);
+}
+
+/* =====================
+AUTO LOGIN
+===================== */
+(async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    auth.classList.add("hidden");
+    app.classList.remove("hidden");
+    loadUser();
+  }
+})();
+</script>
+
 </body>
 </html>
