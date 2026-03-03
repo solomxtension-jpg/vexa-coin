@@ -1,250 +1,199 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>VEXA Mining PRO</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- Supabase SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<style>
-body {
-  background: #0b0f1a;
-  color: #fff;
-  font-family: Arial, sans-serif;
-  display: flex;
-  justify-content: center;
-  padding: 20px;
-}
-.card {
-  background: #111827;
-  padding: 25px;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 100%;
-  box-shadow: 0 0 25px rgba(0,229,255,0.25);
-  position: relative;
-}
-input, button {
-  width: 100%;
-  padding: 10px;
-  margin: 6px 0;
-  border-radius: 8px;
-  border: none;
-}
-button {
-  background: #22d3ee;
-  color: black;
-  font-weight: bold;
-  cursor: pointer;
-}
-button.secondary {
-  background: #1c2747;
-  color: white;
-}
-button:disabled {
-  opacity: 0.5;
-}
-.hidden {
-  display: none;
-}
-.floating-coin {
-  position: absolute;
-  font-size: 22px;
-  animation: floatUp 1s forwards;
-}
-@keyframes floatUp {
-  from {opacity: 1; transform: translateY(0);}
-  to {opacity: 0; transform: translateY(-60px);}
-}
-</style>
+  <meta charset="UTF-8" />
+  <title>VEXA Mining</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 
-<body>
+<body style="font-family:Arial;text-align:center;margin-top:40px;">
 
-<div class="card">
+<h1>VEXA Mining ⛏</h1>
 
-  <!-- AUTH -->
-  <div id="auth">
-    <h2>VEXA Mining PRO</h2>
-    <input id="emailInput" type="email" placeholder="Email">
-    <input id="passwordInput" type="password" placeholder="Password (min 6 chars)">
-    <button onclick="signUp()">Sign Up</button>
-    <button onclick="login()">Login</button>
-    <p id="authMsg"></p>
-  </div>
+<!-- AUTH -->
+<div id="auth-section">
+  <input type="email" id="email" placeholder="Email"><br><br>
+  <input type="password" id="password" placeholder="Password"><br><br>
 
-  <!-- APP -->
-  <div id="app" class="hidden">
-    <h2>Dashboard</h2>
-    <p>Balance: <b><span id="balance">0</span></b> VEXA</p>
-    <p>Mined Today: <b><span id="today">0</span></b></p>
-    <p>Level: <b><span id="level">1</span></b></p>
-    <p>Tap Power: <b><span id="rate">1</span></b> / tap</p>
+  <button onclick="register()">Register</button>
+  <button onclick="login()">Login</button>
 
-    <button id="mineBtn" onclick="tapMine()">⛏️ TAP TO MINE</button>
-    <button onclick="upgrade()" class="secondary">⚡ Upgrade Miner (10 VEXA)</button>
-    <button onclick="logout()" class="secondary">Logout</button>
+  <p id="auth-message"></p>
+</div>
 
-    <p id="msg"></p>
-  </div>
+<!-- APP -->
+<div id="app-section" style="display:none;">
+  <h2>Coins: <span id="coins">0</span></h2>
+  <h3>Mining Power: <span id="power">1</span></h3>
+  <h3>Auto Power: <span id="autoPower">0</span></h3>
 
+  <button onclick="mine()">Tap & Mine</button>
+  <br><br>
+
+  <button onclick="upgradePower()">Upgrade Tap (Cost: 50)</button>
+  <br><br>
+
+  <button onclick="upgradeAuto()">Upgrade Auto (Cost: 100)</button>
+  <br><br>
+
+  <button onclick="logout()">Logout</button>
 </div>
 
 <script>
-/* =====================
-SUPABASE CONFIG
-===================== */
-const SUPABASE_URL = "https://qmcjmnugpujsqabqejpx.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFtY2ptbnVncHVqc3FhYnFlanB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDEyNDQsImV4cCI6MjA4NzExNzI0NH0.U0Sl5wmt6CHrwOgoV5bSJYG1PuHjumDr23v65tAnLqo";
 
-const supabase = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
+const supabaseClient = supabase.createClient(
+  "https://qmcjmnugpujsqabqejpx.supabase.co",
+  "YOUR_ANON_KEY_HERE"
 );
 
-/* =====================
-STATE
-===================== */
 let currentUser = null;
-let isMining = false;
+let coins = 0;
+let power = 1;
+let autoPower = 0;
+let autoInterval = null;
 
-/* =====================
-AUTH
-===================== */
-async function signUp() {
-  authMsg.innerText = "Signing up...";
+/* ================= AUTH ================= */
 
-  const { error } = await supabase.auth.signUp({
-    email: emailInput.value,
-    password: passwordInput.value
-  });
+async function register() {
+  const email = emailInput();
+  const password = passwordInput();
+
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
 
   if (error) {
-    authMsg.innerText = "❌ " + error.message;
-  } else {
-    authMsg.innerText = "✅ Signup successful. Now login.";
+    message(error.message);
+    return;
   }
+
+  message("Registered! Now login.");
 }
 
 async function login() {
-  authMsg.innerText = "Logging in...";
+  const email = emailInput();
+  const password = passwordInput();
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: emailInput.value,
-    password: passwordInput.value
-  });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
   if (error) {
-    authMsg.innerText = "❌ " + error.message;
+    message(error.message);
     return;
   }
 
   currentUser = data.user;
-  authMsg.innerText = "✅ Login successful";
 
-  document.getElementById("auth").classList.add("hidden");
-  document.getElementById("app").classList.remove("hidden");
-
-  loadUser();
+  await loadUserData();
+  startApp();
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   location.reload();
 }
 
-/* =====================
-LOAD USER
-===================== */
-async function loadUser() {
-  const { data } = await supabase
+/* ================= GAME ================= */
+
+function mine() {
+  coins += power;
+  updateUI();
+  saveUserData();
+}
+
+function upgradePower() {
+  if (coins >= 50) {
+    coins -= 50;
+    power += 1;
+    updateUI();
+    saveUserData();
+  }
+}
+
+function upgradeAuto() {
+  if (coins >= 100) {
+    coins -= 100;
+    autoPower += 1;
+    startAutoMining();
+    updateUI();
+    saveUserData();
+  }
+}
+
+function startAutoMining() {
+  if (autoInterval) clearInterval(autoInterval);
+
+  autoInterval = setInterval(() => {
+    coins += autoPower;
+    updateUI();
+    saveUserData();
+  }, 1000);
+}
+
+/* ================= DATABASE ================= */
+
+async function loadUserData() {
+
+  const { data, error } = await supabaseClient
     .from("users")
     .select("*")
     .eq("id", currentUser.id)
     .single();
 
   if (!data) {
-    await supabase.from("users").insert({
+    await supabaseClient.from("users").insert({
       id: currentUser.id,
-      balance: 0,
-      coins_today: 0,
-      level: 1
+      coins: 0,
+      power: 1,
+      auto_power: 0
     });
-    return loadUser();
-  }
 
-  balance.innerText = data.balance;
-  today.innerText = data.coins_today;
-  level.innerText = data.level;
-  rate.innerText = data.level;
-}
-
-/* =====================
-TAP TO MINE
-===================== */
-async function tapMine() {
-  if (isMining) return;
-
-  isMining = true;
-  mineBtn.disabled = true;
-  msg.innerText = "Mining...";
-
-  const { error } = await supabase.rpc("mine_coin", {
-    uid: currentUser.id
-  });
-
-  if (error) {
-    msg.innerText = "❌ " + error.message;
+    coins = 0;
+    power = 1;
+    autoPower = 0;
   } else {
-    showFloatingCoin();
-    loadUser();
-    msg.innerText = "⛏️ Coin mined!";
+    coins = data.coins;
+    power = data.power;
+    autoPower = data.auto_power;
   }
 
-  setTimeout(() => {
-    isMining = false;
-    mineBtn.disabled = false;
-  }, 400);
+  updateUI();
+  startAutoMining();
 }
 
-/* =====================
-UPGRADE
-===================== */
-async function upgrade() {
-  const { error } = await supabase.rpc("upgrade_miner", {
-    uid: currentUser.id
-  });
-
-  if (error) msg.innerText = "❌ " + error.message;
-  else loadUser();
+async function saveUserData() {
+  await supabaseClient
+    .from("users")
+    .update({
+      coins: coins,
+      power: power,
+      auto_power: autoPower
+    })
+    .eq("id", currentUser.id);
 }
 
-/* =====================
-ANIMATION
-===================== */
-function showFloatingCoin() {
-  const coin = document.createElement("div");
-  coin.className = "floating-coin";
-  coin.innerText = "🪙";
-  coin.style.left = Math.random() * 80 + "%";
-  document.querySelector(".card").appendChild(coin);
-  setTimeout(() => coin.remove(), 1000);
+/* ================= UI ================= */
+
+function startApp() {
+  document.getElementById("auth-section").style.display = "none";
+  document.getElementById("app-section").style.display = "block";
 }
 
-/* =====================
-AUTO LOGIN
-===================== */
-(async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) {
-    currentUser = session.user;
-    auth.classList.add("hidden");
-    app.classList.remove("hidden");
-    loadUser();
-  }
-})();
+function updateUI() {
+  document.getElementById("coins").innerText = coins;
+  document.getElementById("power").innerText = power;
+  document.getElementById("autoPower").innerText = autoPower;
+}
+
+function emailInput() {
+  return document.getElementById("email").value;
+}
+
+function passwordInput() {
+  return document.getElementById("password").value;
+}
+
+function message(text) {
+  document.getElementById("auth-message").innerText = text;
+}
+
 </script>
 
 </body>
