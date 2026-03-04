@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VEXA Auto Mining</title>
+<title>VEXA Mining</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   text-align: center;
   background: #0b0f1a;
   color: #fff;
@@ -27,7 +27,7 @@ button {
 </head>
 <body>
 
-<h1>VEXA Auto Mining ⛏</h1>
+<h1>VEXA Mining ⛏</h1>
 
 <!-- AUTH -->
 <div id="auth-section">
@@ -41,9 +41,12 @@ button {
 <!-- APP -->
 <div id="app-section" style="display:none;">
   <h2>Coins: <span id="coins">0</span></h2>
+  <h3>Tap Power: <span id="power">1</span></h3>
   <h3>Auto Power: <span id="autoPower">0</span></h3>
 
-  <button onclick="upgradeAuto()">Upgrade Auto Mining (100 coins)</button><br><br>
+  <button onclick="mine()">Tap & Mine</button><br><br>
+  <button onclick="upgradePower()">Upgrade Tap (50 coins)</button><br><br>
+  <button onclick="upgradeAuto()">Upgrade Auto (100 coins)</button><br><br>
   <button onclick="logout()">Logout</button>
 </div>
 
@@ -56,6 +59,7 @@ const supabaseClient = supabase.createClient(
 
 let currentUser = null;
 let coins = 0;
+let power = 1;
 let autoPower = 0;
 let autoInterval = null;
 
@@ -83,25 +87,25 @@ async function logout() {
   location.reload();
 }
 
-// ================= AUTO MINING =================
-function startAutoMining() {
-  if (autoInterval) clearInterval(autoInterval);
-  if (autoPower > 0) {
-    autoInterval = setInterval(() => {
-      coins += autoPower;
-      updateUI();
-      saveUserData();
-    }, 1000);
-  }
+// ================= GAME =================
+function mine() {
+  coins += power;
+  updateUI();
+  saveUserData();
+}
+
+function upgradePower() {
+  if (coins >= 50) { coins -= 50; power += 1; updateUI(); saveUserData(); }
 }
 
 function upgradeAuto() {
-  if (coins >= 100) {
-    coins -= 100;
-    autoPower += 1;
-    updateUI();
-    saveUserData();
-    startAutoMining();
+  if (coins >= 100) { coins -= 100; autoPower += 1; updateUI(); saveUserData(); startAutoMining(); }
+}
+
+function startAutoMining() {
+  if (autoInterval) clearInterval(autoInterval);
+  if (autoPower > 0) {
+    autoInterval = setInterval(() => { coins += autoPower; updateUI(); saveUserData(); }, 1000);
   }
 }
 
@@ -117,11 +121,12 @@ async function loadUserData() {
     await supabaseClient.from("users").insert({
       id: currentUser.id,
       coins: 0,
+      power: 1,
       auto_power: 0
     });
-    coins = 0; autoPower = 0;
+    coins = 0; power = 1; autoPower = 0;
   } else {
-    coins = data.coins; autoPower = data.auto_power;
+    coins = data.coins; power = data.power; autoPower = data.auto_power;
   }
   updateUI();
   startAutoMining();
@@ -130,7 +135,7 @@ async function loadUserData() {
 async function saveUserData() {
   await supabaseClient
     .from("users")
-    .update({ coins: coins, auto_power: autoPower })
+    .update({ coins: coins, power: power, auto_power: autoPower })
     .eq("id", currentUser.id);
 }
 
@@ -142,6 +147,7 @@ function startApp() {
 
 function updateUI() {
   document.getElementById("coins").innerText = coins;
+  document.getElementById("power").innerText = power;
   document.getElementById("autoPower").innerText = autoPower;
 }
 
