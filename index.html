@@ -11,7 +11,7 @@
 <style>
 body {
   background: linear-gradient(135deg, #0b0f1a, #1c1f2a);
-  color: #fff;
+  color: white;
   font-family: Arial, sans-serif;
   display: flex;
   justify-content: center;
@@ -21,9 +21,9 @@ body {
   background: #111827;
   padding: 30px;
   border-radius: 20px;
-  max-width: 450px;
   width: 100%;
-  box-shadow: 0 0 30px rgba(0,229,255,0.25);
+  max-width: 450px;
+  box-shadow: 0 0 30px rgba(0,229,255,0.3);
   position: relative;
   overflow: hidden;
 }
@@ -42,17 +42,17 @@ button {
   cursor: pointer;
 }
 button.secondary {
-  background: #1c2747;
+  background: #1f2937;
   color: white;
 }
 .hidden { display: none; }
 #progressContainer {
   width: 100%;
   height: 20px;
-  background: #1c2747;
-  border-radius: 12px;
-  margin-top: 15px;
+  background: #1f2937;
+  border-radius: 10px;
   overflow: hidden;
+  margin-top: 15px;
 }
 #progressBar {
   height: 100%;
@@ -62,12 +62,12 @@ button.secondary {
 }
 .floating-coin {
   position: absolute;
-  font-size: 24px;
+  font-size: 22px;
   animation: floatUp 1s forwards;
 }
 @keyframes floatUp {
-  from {opacity: 1; transform: translateY(0);}
-  to {opacity: 0; transform: translateY(-60px);}
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-60px); }
 }
 h2 { text-align: center; color: #00e5ff; }
 </style>
@@ -92,7 +92,7 @@ h2 { text-align: center; color: #00e5ff; }
     <p>Balance: <b><span id="balance">0</span></b> VEXA</p>
     <p>Mining Rate: <b><span id="rate">1</span></b>/tick</p>
 
-    <button onclick="startMining()">⛏️ Start Mining</button>
+    <button onclick="startMining()">⛏ Start Mining</button>
     <button onclick="stopMining()" class="secondary">Stop Mining</button>
 
     <div id="progressContainer">
@@ -109,14 +109,12 @@ h2 { text-align: center; color: #00e5ff; }
 
 </div>
 
-<!-- Working Coin Sound -->
-<audio id="coinSound" src="https://assets.mixkit.co/sfx/preview/mixkit-coins-handling-1939.mp3"></audio>
-
 <script>
-/* ================= SUPABASE CONFIG ================= */
+/* ================= CONFIG ================= */
 
 const SUPABASE_URL = "https://kdmknilstonmiesjocvy.supabase.co";
-const SUPABASE_KEY = "YOUR_PUBLIC_ANON_KEY_HERE"; // <-- sb_publishable_wrnwdrTIgGn7_q_RgYx0fw_5kbqUUJ1
+
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
 
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -135,8 +133,10 @@ let progressInterval = null;
 async function signUp() {
   const email = emailInput.value;
   const password = passwordInput.value;
+
   const { error } = await client.auth.signUp({ email, password });
-  authMsg.innerText = error ? error.message : "Signup successful. Login now.";
+
+  authMsg.innerText = error ? error.message : "Signup successful. Now login.";
 }
 
 async function login() {
@@ -151,10 +151,8 @@ async function login() {
   }
 
   currentUser = data.user;
-
   auth.classList.add("hidden");
   app.classList.remove("hidden");
-
   loadUser();
 }
 
@@ -182,10 +180,10 @@ async function loadUser() {
     });
     coins = 0;
   } else {
-    coins = data.coins;
-    autoPower = data.auto_power;
-    multiplier = data.multiplier;
-    miningSpeed = data.speed;
+    coins = data.coins || 0;
+    autoPower = data.auto_power || 1;
+    multiplier = data.multiplier || 1;
+    miningSpeed = data.speed || 5000;
   }
 
   updateUI();
@@ -216,7 +214,7 @@ function startMining() {
 
     updateUI();
     showCoin();
-    coinSound.play();
+    playBeep();
 
   }, miningSpeed);
 }
@@ -262,6 +260,18 @@ function showCoin() {
   document.querySelector(".card").appendChild(coin);
   coin.style.left = Math.random() * 80 + "%";
   setTimeout(() => coin.remove(), 1000);
+}
+
+/* ================= SOUND ================= */
+
+function playBeep() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = ctx.createOscillator();
+  oscillator.type = "sine";
+  oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+  oscillator.connect(ctx.destination);
+  oscillator.start();
+  oscillator.stop(ctx.currentTime + 0.1);
 }
 
 /* ================= AUTO LOGIN ================= */
