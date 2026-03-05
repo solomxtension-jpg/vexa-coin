@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VEXA Mining PRO</title>
+<title>VEXA PRO Mining</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- Supabase SDK -->
@@ -70,6 +70,7 @@ button.secondary {
   to { opacity: 0; transform: translateY(-60px); }
 }
 h2 { text-align: center; color: #00e5ff; }
+h3 { color: #00e5ff; margin-top: 20px; }
 </style>
 </head>
 <body>
@@ -78,7 +79,7 @@ h2 { text-align: center; color: #00e5ff; }
 
   <!-- AUTH -->
   <div id="auth">
-    <h2>VEXA Mining PRO</h2>
+    <h2>VEXA PRO Mining</h2>
     <input id="emailInput" type="email" placeholder="Email">
     <input id="passwordInput" type="password" placeholder="Password">
     <button onclick="signUp()">Sign Up</button>
@@ -111,15 +112,11 @@ h2 { text-align: center; color: #00e5ff; }
 
 <script>
 /* ================= CONFIG ================= */
-
 const SUPABASE_URL = "https://kdmknilstonmiesjocvy.supabase.co";
-
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
-
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 /* ================= STATE ================= */
-
 let currentUser = null;
 let coins = 0;
 let autoPower = 1;
@@ -129,31 +126,22 @@ let miningInterval = null;
 let progressInterval = null;
 
 /* ================= AUTH ================= */
-
 async function signUp() {
   const email = emailInput.value;
   const password = passwordInput.value;
-
   const { error } = await client.auth.signUp({ email, password });
-
-  authMsg.innerText = error ? error.message : "Signup successful. Now login.";
+  authMsg.innerText = error ? error.message : "Signup successful. Login now.";
 }
 
 async function login() {
   const email = emailInput.value;
   const password = passwordInput.value;
-
   const { data, error } = await client.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    authMsg.innerText = error.message;
-    return;
-  }
-
+  if (error) { authMsg.innerText = error.message; return; }
   currentUser = data.user;
   auth.classList.add("hidden");
   app.classList.remove("hidden");
-  loadUser();
+  await loadUser();
 }
 
 async function logout() {
@@ -162,7 +150,6 @@ async function logout() {
 }
 
 /* ================= LOAD USER ================= */
-
 async function loadUser() {
   const { data } = await client
     .from("users")
@@ -179,18 +166,19 @@ async function loadUser() {
       speed: 5000
     });
     coins = 0;
+    autoPower = 1;
+    multiplier = 1;
+    miningSpeed = 5000;
   } else {
     coins = data.coins || 0;
     autoPower = data.auto_power || 1;
     multiplier = data.multiplier || 1;
     miningSpeed = data.speed || 5000;
   }
-
   updateUI();
 }
 
 /* ================= MINING ================= */
-
 function startMining() {
   if (miningInterval) return;
 
@@ -202,20 +190,11 @@ function startMining() {
   }, 100);
 
   miningInterval = setInterval(async () => {
-
-    const res = await fetch("https://kdmknilstonmiesjocvy.supabase.co/functions/v1/mine_coin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id })
-    });
-
-    const data = await res.json();
-    coins = data.coins;
-
-    updateUI();
+    const { error } = await client.rpc("mine_coin", { uid: currentUser.id });
+    if (error) { console.error(error.message); return; }
+    await loadUser();
     showCoin();
     playBeep();
-
   }, miningSpeed);
 }
 
@@ -227,32 +206,25 @@ function stopMining() {
 }
 
 /* ================= UPGRADES ================= */
-
 async function buyUpgrade(type, cost) {
   if (coins < cost) return alert("Not enough coins");
-
   coins -= cost;
-
   if (type === "autoPower") autoPower += 1;
   if (type === "multiplier") multiplier *= 2;
   if (type === "speed") miningSpeed = Math.max(1000, miningSpeed - 500);
-
   await client.from("users")
     .update({ coins, auto_power: autoPower, multiplier, speed: miningSpeed })
     .eq("id", currentUser.id);
-
   stopMining();
   startMining();
   updateUI();
 }
 
 /* ================= UI ================= */
-
 function updateUI() {
   balance.innerText = coins;
   rate.innerText = autoPower * multiplier;
 }
-
 function showCoin() {
   const coin = document.createElement("div");
   coin.className = "floating-coin";
@@ -263,7 +235,6 @@ function showCoin() {
 }
 
 /* ================= SOUND ================= */
-
 function playBeep() {
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const oscillator = ctx.createOscillator();
@@ -275,14 +246,13 @@ function playBeep() {
 }
 
 /* ================= AUTO LOGIN ================= */
-
 (async () => {
   const { data: { session } } = await client.auth.getSession();
   if (session) {
     currentUser = session.user;
     auth.classList.add("hidden");
     app.classList.remove("hidden");
-    loadUser();
+    await loadUser();
   }
 })();
 </script>
