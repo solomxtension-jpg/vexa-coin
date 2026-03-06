@@ -2,136 +2,431 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VEXA PRO Mining</title>
+<title>VEXA Mining PRO</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-body { background: linear-gradient(135deg,#0b0f1a,#1c1f2a); font-family:Arial,sans-serif; color:#fff; display:flex; justify-content:center; padding:20px; }
-.card { background:#111827; padding:30px; border-radius:20px; width:100%; max-width:450px; box-shadow:0 0 30px rgba(0,229,255,0.3); position:relative; overflow:hidden; }
-input,button { width:100%; padding:12px; margin:8px 0; border-radius:10px; border:none; font-size:16px; }
-button { background:#22d3ee; color:black; font-weight:bold; cursor:pointer; }
-button.secondary { background:#1f2937;color:white; }
-.hidden{display:none;}
-#progressContainer{width:100%;height:20px;background:#1f2937;border-radius:10px;overflow:hidden;margin-top:15px;}
-#progressBar{height:100%;width:0%;background:#00e5ff;transition:width 0.2s linear;}
-.floating-coin{position:absolute;font-size:22px;animation:floatUp 1s forwards;}
-@keyframes floatUp{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-60px);}}
-h2{text-align:center;color:#00e5ff;}
-h3{color:#00e5ff;margin-top:20px;}
+
+body{
+background:linear-gradient(135deg,#0b0f1a,#1c1f2a);
+color:white;
+font-family:Arial;
+display:flex;
+justify-content:center;
+padding:20px;
+}
+
+.card{
+background:#111827;
+padding:30px;
+border-radius:20px;
+width:100%;
+max-width:450px;
+box-shadow:0 0 30px rgba(0,229,255,0.3);
+position:relative;
+overflow:hidden;
+}
+
+input,button{
+width:100%;
+padding:12px;
+margin:8px 0;
+border-radius:10px;
+border:none;
+font-size:16px;
+}
+
+button{
+background:#22d3ee;
+color:black;
+font-weight:bold;
+cursor:pointer;
+}
+
+button.secondary{
+background:#1f2937;
+color:white;
+}
+
+.hidden{
+display:none;
+}
+
+#progressContainer{
+width:100%;
+height:20px;
+background:#1f2937;
+border-radius:10px;
+overflow:hidden;
+margin-top:15px;
+}
+
+#progressBar{
+height:100%;
+width:0%;
+background:#00e5ff;
+transition:width 0.2s linear;
+}
+
+.floating-coin{
+position:absolute;
+font-size:22px;
+animation:floatUp 1s forwards;
+}
+
+@keyframes floatUp{
+from{opacity:1;transform:translateY(0);}
+to{opacity:0;transform:translateY(-60px);}
+}
+
+h2{
+text-align:center;
+color:#00e5ff;
+}
+
 </style>
 </head>
+
 <body>
 
 <div class="card">
 
+<!-- AUTH -->
+
 <div id="auth">
-  <h2>VEXA PRO Mining</h2>
-  <input id="emailInput" type="email" placeholder="Email">
-  <input id="passwordInput" type="password" placeholder="Password">
-  <button onclick="signUp()">Sign Up</button>
-  <button onclick="login()">Login</button>
-  <p id="authMsg"></p>
+
+<h2>VEXA Mining PRO</h2>
+
+<input id="emailInput" type="email" placeholder="Email">
+
+<input id="passwordInput" type="password" placeholder="Password">
+
+<button onclick="signUp()">Sign Up</button>
+
+<button onclick="login()">Login</button>
+
+<p id="authMsg"></p>
+
 </div>
 
-<div id="app" class="hidden">
-  <h2>Dashboard</h2>
-  <p>Balance: <b><span id="balance">0</span></b> VEXA</p>
-  <p>Mining Rate: <b><span id="rate">1</span></b>/tick</p>
-  <button onclick="startMining()">⛏ Start Mining</button>
-  <button onclick="stopMining()" class="secondary">Stop Mining</button>
-  <div id="progressContainer"><div id="progressBar"></div></div>
+<!-- APP -->
 
-  <h3>Upgrades</h3>
-  <button onclick="buyUpgrade('autoPower',10)">Auto Power (+1) - 10</button>
-  <button onclick="buyUpgrade('multiplier',25)">Multiplier x2 - 25</button>
-  <button onclick="buyUpgrade('speed',50)">Faster Mining - 50</button>
-  <button onclick="logout()" class="secondary">Logout</button>
+<div id="app" class="hidden">
+
+<h2>Dashboard</h2>
+
+<p>Balance: <b><span id="balance">0</span></b> VEXA</p>
+
+<p>Mining Rate: <b><span id="rate">1</span></b>/tick</p>
+
+<button onclick="startMining()">⛏ Start Mining</button>
+
+<button onclick="stopMining()" class="secondary">Stop Mining</button>
+
+<div id="progressContainer">
+<div id="progressBar"></div>
+</div>
+
+<h3>Upgrades</h3>
+
+<button onclick="buyUpgrade('autoPower',10)">
+Auto Power (+1) - 10
+</button>
+
+<button onclick="buyUpgrade('multiplier',25)">
+Multiplier x2 - 25
+</button>
+
+<button onclick="buyUpgrade('speed',50)">
+Faster Mining - 50
+</button>
+
+<button onclick="logout()" class="secondary">
+Logout
+</button>
+
 </div>
 
 </div>
 
 <script>
-const SUPABASE_URL="https://kdmknilstonmiesjocvy.supabase.co";
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
-const supabase = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let currentUser=null,coins=0,autoPower=1,multiplier=1,miningSpeed=5000,miningInterval=null,progressInterval=null;
+/* SUPABASE CONFIG */
+
+const SUPABASE_URL="https://kdmknilstonmiesjocvy.supabase.co";
+
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
+
+const supabaseClient=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+/* STATE */
+
+let currentUser=null;
+
+let coins=0;
+
+let autoPower=1;
+
+let multiplier=1;
+
+let miningSpeed=5000;
+
+let miningInterval=null;
+
+let progressInterval=null;
+
+/* AUTH */
 
 async function signUp(){
-  const email=emailInput.value,password=passwordInput.value;
-  const {error}=await supabase.auth.signUp({email,password});
-  authMsg.innerText=error?error.message:"Signup successful. Login now.";
+
+const email=emailInput.value;
+
+const password=passwordInput.value;
+
+const {error}=await supabaseClient.auth.signUp({
+email,
+password
+});
+
+authMsg.innerText=error?error.message:"Signup successful. Now login.";
+
 }
 
 async function login(){
-  const email=emailInput.value,password=passwordInput.value;
-  const {data,error}=await supabase.auth.signInWithPassword({email,password});
-  if(error){authMsg.innerText=error.message;return;}
-  currentUser=data.user;
-  auth.classList.add("hidden");
-  app.classList.remove("hidden");
-  await loadUser();
+
+const email=emailInput.value;
+
+const password=passwordInput.value;
+
+const {data,error}=await supabaseClient.auth.signInWithPassword({
+email,
+password
+});
+
+if(error){
+
+authMsg.innerText=error.message;
+
+return;
+
+}
+
+currentUser=data.user;
+
+auth.classList.add("hidden");
+
+app.classList.remove("hidden");
+
+loadUser();
+
 }
 
 async function logout(){
-  await supabase.auth.signOut();
-  location.reload();
+
+await supabaseClient.auth.signOut();
+
+location.reload();
+
 }
+
+/* LOAD USER */
 
 async function loadUser(){
-  const {data}=await supabase.from("users").select("*").eq("id",currentUser.id).single();
-  if(!data){
-    await supabase.from("users").insert({id:currentUser.id,coins:0,auto_power:1,multiplier:1,speed:5000});
-    coins=0; autoPower=1; multiplier=1; miningSpeed=5000;
-  } else{
-    coins=data.coins||0;
-    autoPower=data.auto_power||1;
-    multiplier=data.multiplier||1;
-    miningSpeed=data.speed||5000;
-  }
-  updateUI();
+
+const {data}=await supabaseClient
+.from("users")
+.select("*")
+.eq("id",currentUser.id)
+.single();
+
+if(!data){
+
+await supabaseClient.from("users").insert({
+
+id:currentUser.id,
+coins:0,
+auto_power:1,
+multiplier:1,
+speed:5000
+
+});
+
+coins=0;
+
+}else{
+
+coins=data.coins||0;
+
+autoPower=data.auto_power||1;
+
+multiplier=data.multiplier||1;
+
+miningSpeed=data.speed||5000;
+
 }
 
+updateUI();
+
+}
+
+/* MINING */
+
 function startMining(){
-  if(miningInterval)return;
-  let progress=0;
-  progressInterval=setInterval(()=>{progress+=2;if(progress>100)progress=0;progressBar.style.width=progress+"%";},100);
-  miningInterval=setInterval(async ()=>{
-    const {error}=await supabase.rpc("mine_coin",{uid:currentUser.id});
-    if(error){console.error(error.message);return;}
-    await loadUser();
-    showCoin();
-    playBeep();
-  },miningSpeed);
+
+if(miningInterval)return;
+
+let progress=0;
+
+progressInterval=setInterval(()=>{
+
+progress+=2;
+
+if(progress>100)progress=0;
+
+progressBar.style.width=progress+"%";
+
+},100);
+
+miningInterval=setInterval(async()=>{
+
+coins+=autoPower*multiplier;
+
+await supabaseClient
+.from("users")
+.update({coins:coins})
+.eq("id",currentUser.id);
+
+updateUI();
+
+showCoin();
+
+playBeep();
+
+},miningSpeed);
+
 }
 
 function stopMining(){
-  clearInterval(miningInterval);
-  clearInterval(progressInterval);
-  miningInterval=null;
-  progressBar.style.width="0%";
+
+clearInterval(miningInterval);
+
+clearInterval(progressInterval);
+
+miningInterval=null;
+
+progressBar.style.width="0%";
+
 }
+
+/* UPGRADES */
 
 async function buyUpgrade(type,cost){
-  if(coins<cost){alert("Not enough coins");return;}
-  coins-=cost;
-  if(type==="autoPower")autoPower+=1;
-  if(type==="multiplier")multiplier*=2;
-  if(type==="speed")miningSpeed=Math.max(1000,miningSpeed-500);
-  await supabase.from("users").update({coins,auto_power:autoPower,multiplier,miningSpeed}).eq("id",currentUser.id);
-  stopMining(); startMining();
-  updateUI();
+
+if(coins<cost){
+
+alert("Not enough coins");
+
+return;
+
 }
 
-function updateUI(){balance.innerText=coins; rate.innerText=autoPower*multiplier;}
-function showCoin(){const c=document.createElement("div");c.className="floating-coin";c.innerText="🪙";document.querySelector(".card").appendChild(c);c.style.left=Math.random()*80+"%";setTimeout(()=>c.remove(),1000);}
-function playBeep(){const ctx=new(window.AudioContext||window.webkitAudioContext)();const osc=ctx.createOscillator();osc.type="sine";osc.frequency.setValueAtTime(800,ctx.currentTime);osc.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+0.1);}
+coins-=cost;
+
+if(type==="autoPower")autoPower+=1;
+
+if(type==="multiplier")multiplier*=2;
+
+if(type==="speed")miningSpeed=Math.max(1000,miningSpeed-500);
+
+await supabaseClient
+.from("users")
+.update({
+
+coins:coins,
+auto_power:autoPower,
+multiplier:multiplier,
+speed:miningSpeed
+
+})
+.eq("id",currentUser.id);
+
+stopMining();
+
+startMining();
+
+updateUI();
+
+}
+
+/* UI */
+
+function updateUI(){
+
+balance.innerText=Math.floor(coins);
+
+rate.innerText=autoPower*multiplier;
+
+}
+
+function showCoin(){
+
+const coin=document.createElement("div");
+
+coin.className="floating-coin";
+
+coin.innerText="🪙";
+
+document.querySelector(".card").appendChild(coin);
+
+coin.style.left=Math.random()*80+"%";
+
+setTimeout(()=>coin.remove(),1000);
+
+}
+
+/* SOUND */
+
+function playBeep(){
+
+const ctx=new (window.AudioContext||window.webkitAudioContext)();
+
+const osc=ctx.createOscillator();
+
+osc.type="sine";
+
+osc.frequency.setValueAtTime(800,ctx.currentTime);
+
+osc.connect(ctx.destination);
+
+osc.start();
+
+osc.stop(ctx.currentTime+0.1);
+
+}
+
+/* AUTO LOGIN */
 
 (async()=>{
-  const {data:{session}}=await supabase.auth.getSession();
-  if(session){currentUser=session.user; auth.classList.add("hidden"); app.classList.remove("hidden"); await loadUser();}
+
+const {data:{session}}=await supabaseClient.auth.getSession();
+
+if(session){
+
+currentUser=session.user;
+
+auth.classList.add("hidden");
+
+app.classList.remove("hidden");
+
+loadUser();
+
+}
+
 })();
+
 </script>
+
 </body>
 </html>
