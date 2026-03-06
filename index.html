@@ -279,38 +279,47 @@ function startMining() {
 
   let progress = 0;
 
-  // progress bar animation (visual)
+  // progress animation every second
   progressInterval = setInterval(() => {
 
-    progress += 1.66; // fills in 60 seconds
+    progress += 1.66;
 
     if (progress > 100) progress = 0;
 
     progressBar.style.width = progress + "%";
 
-    showCoin(); // floating animation every second
+    showCoin();
 
   }, 1000);
 
 
-  // REAL MINING every 60 seconds
+  // REAL mining every 60 seconds
   miningInterval = setInterval(async () => {
 
     const miningAmount = 0.001 * autoPower * multiplier;
 
-    coins += miningAmount;
+    // make sure coins is a number
+    coins = Number(coins);
 
-    await client
+    coins = coins + miningAmount;
+
+    const { error } = await client
       .from("users")
-      .update({
-        coins: coins
-      })
+      .update({ coins: coins })
       .eq("id", currentUser.id);
+
+    if (error) {
+      console.log("Mining error:", error);
+      return;
+    }
 
     updateUI();
 
-  }, 60000); // 60 seconds
+  }, 60000);
+
 }
+
+
 
 
 function stopMining(){
