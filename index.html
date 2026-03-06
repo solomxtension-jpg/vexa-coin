@@ -296,7 +296,7 @@ function startMining() {
   // REAL MINING every 60 seconds
   miningInterval = setInterval(async () => {
 
-    const miningAmount = autoPower * multiplier;
+    const miningAmount = 0.001 * autoPower * multiplier;
 
     coins += miningAmount;
 
