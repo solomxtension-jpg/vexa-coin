@@ -271,53 +271,57 @@ updateUI();
 
 }
 
-/* MINING */
+/* ================= MINING ================= */
 
-function startMining(){
+function startMining() {
 
-if(miningInterval)return;
+  if (miningInterval) return;
 
-let progress=0;
+  let progress = 0;
 
-progressInterval=setInterval(()=>{
+  // progress bar animation (visual)
+  progressInterval = setInterval(() => {
 
-progress+=2;
+    progress += 1.66; // fills in 60 seconds
 
-if(progress>100)progress=0;
+    if (progress > 100) progress = 0;
 
-progressBar.style.width=progress+"%";
+    progressBar.style.width = progress + "%";
 
-},100);
+    showCoin(); // floating animation every second
 
-miningInterval=setInterval(async()=>{
+  }, 1000);
 
-coins+=autoPower*multiplier;
 
-await supabaseClient
-.from("users")
-.update({coins:coins})
-.eq("id",currentUser.id);
+  // REAL MINING every 60 seconds
+  miningInterval = setInterval(async () => {
 
-updateUI();
+    const miningAmount = autoPower * multiplier;
 
-showCoin();
+    coins += miningAmount;
 
-playBeep();
+    await client
+      .from("users")
+      .update({
+        coins: coins
+      })
+      .eq("id", currentUser.id);
 
-},miningSpeed);
+    updateUI();
 
+  }, 60000); // 60 seconds
 }
+
 
 function stopMining(){
 
-clearInterval(miningInterval);
+  clearInterval(miningInterval);
+  clearInterval(progressInterval);
 
-clearInterval(progressInterval);
+  miningInterval = null;
+  progressInterval = null;
 
-miningInterval=null;
-
-progressBar.style.width="0%";
-
+  progressBar.style.width = "0%";
 }
 
 /* UPGRADES */
