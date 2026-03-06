@@ -368,7 +368,7 @@ updateUI();
 
 function updateUI(){
 
-balance.innerText=Math.floor(coins);
+balance.innerText = Number(coins).toFixed(6);
 
 rate.innerText=autoPower*multiplier;
 
