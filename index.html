@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>VEXA Mining Pro</title>
+<title>VEXA Mining Ultimate</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -49,14 +49,6 @@ justify-content:center;
 font-weight:bold;
 }
 
-.menu button{
-background:none;
-border:none;
-color:white;
-font-size:18px;
-cursor:pointer;
-}
-
 .container{
 padding:20px;
 max-width:900px;
@@ -89,11 +81,6 @@ cursor:pointer;
 margin:20px auto;
 display:block;
 box-shadow:0 0 25px rgba(0,255,255,0.5);
-transition:0.2s;
-}
-
-.mine-btn:hover{
-transform:scale(1.05);
 }
 
 .progress{
@@ -110,19 +97,20 @@ background:linear-gradient(90deg,#00f2fe,#4facfe);
 width:0%;
 }
 
+input,select{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+border:none;
+}
+
 button{
 padding:10px 15px;
 border:none;
 border-radius:8px;
 cursor:pointer;
-}
-
-input{
-width:100%;
-padding:10px;
-margin:10px 0;
-border-radius:8px;
-border:none;
+margin-top:10px;
 }
 
 .auth{
@@ -135,10 +123,6 @@ display:flex;
 justify-content:space-between;
 padding:8px 0;
 border-bottom:1px solid rgba(255,255,255,0.1);
-}
-
-.theme{
-cursor:pointer;
 }
 
 .light{
@@ -158,7 +142,7 @@ color:black;
 
 <div id="auth" class="auth card">
 
-<h2>Login</h2>
+<h2>VEXA Mining</h2>
 
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
@@ -176,12 +160,12 @@ color:black;
 <div class="avatar" id="avatar">U</div>
 <div>
 <div id="username">User</div>
-<div style="font-size:12px">Level <span id="level">1</span></div>
+<div>Level <span id="level">1</span></div>
 </div>
 </div>
 
-<div class="menu">
-<span class="theme" onclick="toggleTheme()">🌗</span>
+<div>
+<button onclick="toggleTheme()">🌗</button>
 <button onclick="logout()">Logout</button>
 </div>
 
@@ -205,14 +189,48 @@ color:black;
 
 <div class="card">
 
-<h3>Daily Bonus</h3>
+<h3>Daily Reward</h3>
+
 <button onclick="daily()">Claim 0.01</button>
+
+<p>Streak: <span id="streak">0</span></p>
+
+</div>
+
+<div class="card">
+
+<h3>Referral</h3>
+
+<p>Your Code:</p>
+
+<input id="refcode" readonly>
+
+</div>
+
+<div class="card">
+
+<h3>Coin Store</h3>
+
+<button onclick="buyBoost(2,0.05)">Buy x2 Boost (0.05)</button>
+<button onclick="buyBoost(3,0.1)">Buy x3 Boost (0.1)</button>
+
+</div>
+
+<div class="card">
+
+<h3>Withdraw</h3>
+
+<input id="wallet" placeholder="Wallet Address">
+<input id="amount" placeholder="Amount">
+
+<button onclick="withdraw()">Request Withdrawal</button>
 
 </div>
 
 <div class="card">
 
 <h3>Leaderboard</h3>
+
 <div id="leaderboard" class="leaderboard"></div>
 
 </div>
@@ -224,7 +242,7 @@ color:black;
 <script>
 
 const supabaseUrl="https://kdmknilstonmiesjocvy.supabase.co"
-const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE"
+const supabaseKey="YOUR_PUBLIC_ANON_KEY"
 
 const db=supabase.createClient(supabaseUrl,supabaseKey)
 
@@ -232,10 +250,12 @@ let user=null
 let coins=0
 let xp=0
 let level=1
+let streak=0
+let multiplier=1
 
 async function signup(){
 
-const {data,error}=await db.auth.signUp({
+const {error}=await db.auth.signUp({
 email:email.value,
 password:password.value
 })
@@ -243,6 +263,7 @@ password:password.value
 if(error) return alert(error.message)
 
 alert("Account created")
+
 }
 
 async function login(){
@@ -283,22 +304,32 @@ let {data}=await db
 
 if(!data){
 
+let code=Math.random().toString(36).substring(2,8)
+
 await db.from("users").insert({
 id:user.id,
 coins:0,
 xp:0,
-level:1
+level:1,
+streak:0,
+refcode:code
 })
 
 coins=0
 xp=0
 level=1
+streak=0
+
+refcode.value=code
 
 }else{
 
 coins=data.coins
 xp=data.xp
 level=data.level
+streak=data.streak
+
+refcode.value=data.refcode
 
 }
 
@@ -308,24 +339,28 @@ updateUI()
 
 function updateUI(){
 
-document.getElementById("coins").innerText=coins.toFixed(3)
+coinsEl=document.getElementById("coins")
+coinsEl.innerText=coins.toFixed(3)
 
-document.getElementById("level").innerText=level
+level.innerText=level
 
 let percent=(xp%100)
 
-document.getElementById("xpbar").style.width=percent+"%"
+xpbar.style.width=percent+"%"
+
+document.getElementById("streak").innerText=streak
 
 }
 
 async function mine(){
 
-coins+=0.001
+coins+=0.001*multiplier
 xp+=5
 
 if(xp>=level*100){
 
 level++
+
 alert("Level Up!")
 
 }
@@ -342,6 +377,23 @@ await db
 async function daily(){
 
 coins+=0.01
+streak++
+
+updateUI()
+
+await db
+.from("users")
+.update({coins,streak})
+.eq("id",user.id)
+
+}
+
+async function buyBoost(m,cost){
+
+if(coins<cost) return alert("Not enough coins")
+
+coins-=cost
+multiplier=m
 
 updateUI()
 
@@ -352,11 +404,24 @@ await db
 
 }
 
+async function withdraw(){
+
+await db.from("withdrawals").insert({
+user_id:user.id,
+amount:amount.value,
+wallet:wallet.value,
+status:"pending"
+})
+
+alert("Withdrawal requested")
+
+}
+
 async function leaderboardLoad(){
 
 const {data}=await db
 .from("users")
-.select("coins,id")
+.select("coins")
 .order("coins",{ascending:false})
 .limit(10)
 
