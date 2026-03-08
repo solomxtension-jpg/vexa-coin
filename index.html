@@ -15,77 +15,76 @@
 body{
 margin:0;
 font-family:Arial;
-background:linear-gradient(135deg,#0f172a,#020617);
+background:#0f172a;
 color:white;
+}
+
+.wrapper{
+max-width:1100px;
+margin:auto;
+padding:20px;
+}
+
+.header{
 display:flex;
-justify-content:center;
+justify-content:space-between;
 align-items:center;
-height:100vh;
-}
-
-.container{
-width:420px;
-background:#111827;
-border-radius:18px;
-padding:30px;
-box-shadow:0 0 30px rgba(0,255,255,.15);
-}
-
-h1{
-text-align:center;
-color:#22d3ee;
 margin-bottom:20px;
+}
+
+.balanceCard{
+background:#111827;
+padding:20px;
+border-radius:12px;
+font-size:24px;
+box-shadow:0 0 20px rgba(0,255,255,.15);
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+}
+
+.card{
+background:#111827;
+padding:20px;
+border-radius:12px;
+box-shadow:0 0 15px rgba(0,0,0,.5);
+}
+
+.mineBtn{
+width:100%;
+padding:18px;
+font-size:18px;
+background:#22d3ee;
+border:none;
+border-radius:12px;
+cursor:pointer;
+box-shadow:0 0 15px #22d3ee;
+}
+
+.mineBtn:hover{
+transform:scale(1.03);
 }
 
 input{
 width:100%;
-padding:12px;
-margin:8px 0;
+padding:10px;
+margin-top:8px;
 border:none;
-border-radius:8px;
+border-radius:6px;
 background:#1f2937;
 color:white;
 }
 
 button{
-width:100%;
-padding:12px;
-margin-top:8px;
+margin-top:10px;
+padding:10px;
 border:none;
-border-radius:8px;
+border-radius:6px;
 background:#22d3ee;
-font-weight:bold;
 cursor:pointer;
-}
-
-button:hover{
-opacity:.9;
-}
-
-.secondary{
-background:#374151;
-}
-
-.hidden{
-display:none;
-}
-
-.card{
-background:#020617;
-padding:15px;
-border-radius:12px;
-margin-top:12px;
-}
-
-.stat{
-display:flex;
-justify-content:space-between;
-margin:6px 0;
-}
-
-#leaderboard p{
-font-size:13px;
-margin:3px 0;
 }
 
 </style>
@@ -113,33 +112,31 @@ margin:3px 0;
 <div id="app" class="hidden">
 
 <h1>Dashboard</h1>
+<div class="wrapper">
 
-<div class="card">
+<div class="header">
 
-<div class="stat">
-<span>Balance</span>
-<b id="balance">0</b>
+<div class="balanceCard">
+Balance: <b id="balance">0</b> VEXA
 </div>
 
-<div class="stat">
-<span>Rate</span>
-<b id="rate">0</b>
-</div>
-
-<div class="stat">
-<span>Referral</span>
-<b id="refCode"></b>
+<div>
+Rate: <b id="rate"></b>
 </div>
 
 </div>
 
-<button id="mineBtn">⛏ Start Mining</button>
+<button class="mineBtn" onclick="startMining()">⛏ Start Mining</button>
+
+<div class="grid">
 
 <div class="card">
 
 <h3>Upgrades</h3>
 
-<button id="autoBtn">Auto Power +1 (10)</button> <button id="multiBtn">Multiplier x2 (25)</button>
+<button onclick="upgradeAuto()">Auto Power +1 (10)</button>
+
+<button onclick="upgradeMulti()">Multiplier x2 (25)</button>
 
 </div>
 
@@ -147,7 +144,7 @@ margin:3px 0;
 
 <h3>Daily Bonus</h3>
 
-<button id="dailyBtn">Claim 0.01</button>
+<button onclick="daily()">Claim 0.01</button>
 
 </div>
 
@@ -155,22 +152,21 @@ margin:3px 0;
 
 <h3>Withdraw</h3>
 
-<input id="wallet" placeholder="Wallet address">
+<input id="wallet" placeholder="Wallet">
+
 <input id="amount" placeholder="Amount">
 
-<button id="withdrawBtn">Request Withdrawal</button>
+<button onclick="withdraw()">Request</button>
 
 </div>
 
 <div class="card">
 
-<h3>Top Miners</h3>
+<h3>Leaderboard</h3>
 
 <div id="leaderboard"></div>
 
 </div>
-
-<button id="logoutBtn" class="secondary">Logout</button>
 
 </div>
 
