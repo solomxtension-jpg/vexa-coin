@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VEX - Vexa Coin Ultimate</title>
+<title>VEX - Vexa Coin Ultimate PRO</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* Global Styles */
@@ -17,7 +17,8 @@ header{display:flex;justify-content:space-between;align-items:center;padding:15p
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
 .card{background:#121826;border-radius:12px;padding:20px;border:1px solid #1f2937;}
 .balance{font-size:36px;font-weight:bold;}
-button{background:#22c55e;border:none;padding:12px 18px;border-radius:8px;cursor:pointer;font-weight:600;}
+button{background:#22c55e;border:none;padding:12px 18px;border-radius:8px;cursor:pointer;font-weight:600;transition:0.2s;}
+button:hover{opacity:0.9;}
 input{width:100%;padding:10px;border-radius:8px;border:none;margin-top:10px;background:#1f2937;color:white;}
 .timer{font-size:18px;color:#22c55e;margin-top:10px;}
 .auth{max-width:400px;margin:100px auto;display:flex;flex-direction:column;gap:15px;}
@@ -25,11 +26,13 @@ input{width:100%;padding:10px;border-radius:8px;border:none;margin-top:10px;back
 .auth button{width:100%;padding:12px;background:#22c55e;border:none;border-radius:8px;cursor:pointer;font-weight:600;}
 .switchAuth{text-align:center;color:#60a5fa;cursor:pointer;margin-top:10px;font-size:13px;}
 .progressBar{height:10px;background:#1f2937;border-radius:20px;margin-top:15px;overflow:hidden;}
-.progress{height:100%;width:0%;background:#22c55e;}
+.progress{height:100%;width:0%;background:#22c55e;transition:width 1s;}
 .table{width:100%;margin-top:20px;border-collapse:collapse;}
 .table th{text-align:left;padding:10px;background:#020617;}
 .table td{padding:10px;border-bottom:1px solid #1f2937;}
 .copyBtn{padding:8px 14px;background:#22c55e;border:none;border-radius:6px;margin-top:10px;cursor:pointer;}
+.upgradeBtn{background:#3b82f6;}
+@media(max-width:768px){.grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -57,37 +60,68 @@ input{width:100%;padding:10px;border-radius:8px;border:none;margin-top:10px;back
 </header>
 <div class="container">
 <div class="grid">
+<!-- Balance Card -->
 <div class="card">
 <h3>Balance</h3>
 <div class="balance" id="balance">0</div>
 <p>VEXA Coin</p>
 </div>
+
+<!-- Mining Card -->
 <div class="card">
 <h3>Mining</h3>
 <button class="mineBtn" id="mineBtn" onclick="startMining()">Start Mining</button>
 <div class="progressBar"><div class="progress" id="progress"></div></div>
 <p class="timer" id="mineTimer">Not mining</p>
 </div>
+
+<!-- XP & Level Card -->
 <div class="card">
 <h3>Level & XP</h3>
 <p>Level: <span id="level">1</span></p>
 <p>XP: <span id="xp">0</span></p>
 </div>
+
+<!-- Referral Card -->
 <div class="card">
 <h3>Referral Code</h3>
 <p id="refCode"></p>
 <button class="copyBtn" onclick="copyRef()">Copy</button>
 </div>
+
+<!-- Withdraw Card -->
 <div class="card">
 <h3>Withdraw</h3>
 <input id="wallet" placeholder="Wallet Address">
 <input id="amount" placeholder="Amount">
 <button onclick="withdraw()">Request Withdraw</button>
 </div>
+
+<!-- Leaderboard Card -->
 <div class="card">
 <h3>Leaderboard</h3>
-<table class="table"><thead><tr><th>User</th><th>Balance</th></tr></thead><tbody id="leaderboard"></tbody></table>
+<table class="table">
+<thead><tr><th>User</th><th>Balance</th></tr></thead>
+<tbody id="leaderboard"></tbody>
+</table>
 </div>
+
+<!-- Upgrades Card -->
+<div class="card">
+<h3>Upgrades</h3>
+<p>Auto Miner</p>
+<button class="upgradeBtn" onclick="upgrade('auto')">Upgrade</button>
+<p>Multiplier</p>
+<button class="upgradeBtn" onclick="upgrade('multi')">Upgrade</button>
+</div>
+
+<!-- Daily Bonus -->
+<div class="card">
+<h3>Daily Bonus</h3>
+<button onclick="claimDaily()">Claim</button>
+<p id="dailyMsg"></p>
+</div>
+
 </div>
 </div>
 </div>
@@ -96,14 +130,16 @@ input{width:100%;padding:10px;border-radius:8px;border:none;margin-top:10px;back
 const SUPABASE_URL="https://kdmknilstonmiesjocvy.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 let user = null;
-let coins=0,xp=0,level=1,lastMine=null;
+let coins=0,xp=0,level=1,lastMine=null,dailyClaimed=false;
+let autoMiner=0,multiplier=1;
 
 async function signup(){
   const {data,error}=await db.auth.signUp({email:email.value,password:password.value});
   if(error){authMsg.innerText=error.message;return;}
   const code=Math.random().toString(36).substring(2,8);
-  await db.from('users').insert({id:data.user.id,coins:0,xp:0,level:1,refcode:code});
+  await db.from('users').insert({id:data.user.id,coins:0,xp:0,level:1,refcode:code,auto_miner:0,multiplier:1});
   authMsg.innerText='Account created, please login';
 }
 
@@ -115,21 +151,24 @@ async function login(){
   dashboard.style.display='block';
   avatar.innerText=user.email[0].toUpperCase();
   username.innerText=user.email.split('@')[0];
-  loadUser();
+  await loadUser();
   setInterval(updateTimer,1000);
+  setInterval(autoMine,10000); // auto mining interval
 }
 
 async function loadUser(){
   const {data}=await db.from('users').select('*').eq('id',user.id).single();
   if(!data){
     const code=Math.random().toString(36).substring(2,8);
-    await db.from('users').insert({id:user.id,coins:0,xp:0,level:1,refcode:code});
+    await db.from('users').insert({id:user.id,coins:0,xp:0,level:1,refcode:code,auto_miner:0,multiplier:1});
   } else {
     coins=Number(data.coins);
     xp=Number(data.xp);
     level=Number(data.level);
     lastMine=data.last_mine;
     refCode.innerText=data.refcode;
+    autoMiner=data.auto_miner||0;
+    multiplier=data.multiplier||1;
     document.getElementById('balance').innerText=coins;
     document.getElementById('xp').innerText=xp;
     document.getElementById('level').innerText=level;
@@ -141,15 +180,17 @@ async function startMining(){
   const now=new Date();
   if(lastMine){
     const diff=(now-new Date(lastMine))/1000;
-    if(diff<86400){alert('Mining already in cooldown');return;}
+    if(diff<86400){alert('Mining in cooldown');return;}
   }
   lastMine=now;
-  coins+=1;
+  const mined = 1 * multiplier;
+  coins+=mined;
   xp+=10;
+  progress.style.width='100%';
+  setTimeout(()=>{progress.style.width='0%'; mineTimer.innerText='Mining complete';},1000);
   await db.from('users').update({coins,xp,last_mine:lastMine}).eq('id',user.id);
   document.getElementById('balance').innerText=coins;
   document.getElementById('xp').innerText=xp;
-  document.getElementById('mineTimer').innerText='Mining complete';
   updateLeaderboard();
 }
 
@@ -174,7 +215,7 @@ async function withdraw(){
   if(amt>coins){alert('Not enough balance');return;}
   coins-=amt;
   await db.from('users').update({coins}).eq('id',user.id);
-  await db.from('withdrawals').insert({user_id:user.id,amount:amt,wallet:wallet.value});
+  await db.from('withdrawals').insert({user_id:user.id,amount:amt,wallet:wallet.value,status:'pending'});
   document.getElementById('balance').innerText=coins;
   alert('Withdrawal requested');
 }
@@ -182,7 +223,11 @@ async function withdraw(){
 async function updateLeaderboard(){
   const {data}=await db.from('users').select('email,coins').order('coins',{ascending:false}).limit(10);
   leaderboard.innerHTML='';
-  data.forEach(u=>{let tr=document.createElement('tr');tr.innerHTML=`<td>${u.email}</td><td>${u.coins}</td>`;leaderboard.appendChild(tr);});
+  data.forEach(u=>{
+    let tr=document.createElement('tr');
+    tr.innerHTML=`<td>${u.email}</td><td>${u.coins}</td>`;
+    leaderboard.appendChild(tr);
+  });
 }
 
 async function logout(){
@@ -191,6 +236,38 @@ async function logout(){
 }
 
 function switchAuth(){email.value='';password.value='';authMsg.innerText='';}
+
+// Auto Miner Logic
+async function autoMine(){
+  if(autoMiner>0){
+    coins += autoMiner * multiplier;
+    xp += autoMiner*5;
+    document.getElementById('balance').innerText=coins;
+    document.getElementById('xp').innerText=xp;
+    await db.from('users').update({coins,xp}).eq('id',user.id);
+    updateLeaderboard();
+  }
+}
+
+// Upgrade logic
+async function upgrade(type){
+  if(type==='auto'){autoMiner+=1;}
+  if(type==='multi'){multiplier+=0.5;}
+  await db.from('users').update({auto_miner:autoMiner,multiplier}).eq('id',user.id);
+  alert('Upgrade applied');
+}
+
+// Daily bonus
+async function claimDaily(){
+  if(dailyClaimed){dailyMsg.innerText='Already claimed today'; return;}
+  coins+=5;
+  xp+=5;
+  document.getElementById('balance').innerText=coins;
+  document.getElementById('xp').innerText=xp;
+  dailyClaimed=true;
+  dailyMsg.innerText='Daily bonus claimed!';
+  await db.from('users').update({coins,xp}).eq('id',user.id);
+}
 </script>
 </body>
 </html>
