@@ -48,7 +48,7 @@ button:hover { opacity: 0.85; }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
+    margin-bottom: 15px;
 }
 .profile { display: flex; align-items: center; }
 .profile-badge {
@@ -64,6 +64,7 @@ button:hover { opacity: 0.85; }
     font-size: 20px;
 }
 .username { font-weight: bold; color: #22d3ee; }
+
 .balanceCard {
     background: #111827;
     padding: 15px 20px;
@@ -72,6 +73,7 @@ button:hover { opacity: 0.85; }
     box-shadow: 0 0 20px rgba(0,255,255,.15);
     margin-bottom: 15px;
 }
+
 .mineBtn {
     width: 100%;
     padding: 18px;
@@ -83,6 +85,8 @@ button:hover { opacity: 0.85; }
     box-shadow: 0 0 25px #22d3ee;
     margin-bottom: 20px;
 }
+
+/* Progress bar */
 .progress-container {
     width: 100%;
     background: #1f2937;
@@ -101,6 +105,19 @@ button:hover { opacity: 0.85; }
     font-weight: bold;
     transition: width 0.5s ease;
 }
+
+/* XP Bar */
+#xp-bar {
+    background: linear-gradient(90deg,#f472b6,#ec4899);
+    color: black;
+    height: 100%;
+    font-size: 12px;
+    line-height: 15px;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Card layout */
 .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -130,7 +147,72 @@ button:hover { opacity: 0.85; }
 }
 @keyframes drop {
     0% { transform: translateY(0) scale(1); opacity:1; }
+    50% { transform: translateY(-10px) scale(1.1); opacity:0.9; }
     100% { transform: translateY(200px) scale(0.5); opacity:0; }
+}
+
+/* Level up popup */
+.level-up-popup {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    background: linear-gradient(135deg,#22d3ee,#0bc5ea);
+    color: black;
+    padding: 20px 30px;
+    border-radius: 15px;
+    font-weight: bold;
+    font-size: 20px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(0,255,255,.3);
+    display: none;
+    z-index: 1000;
+}
+
+/* Streak flames */
+.streak-container {
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #facc15;
+}
+.flames {
+    display: inline-block;
+    margin-left: 10px;
+    position: relative;
+    width: 60px;
+    height: 25px;
+}
+.flame {
+    position: absolute;
+    bottom: 0;
+    width: 12px;
+    height: 12px;
+    background: radial-gradient(circle, #facc15 0%, #f59e0b 100%);
+    border-radius: 50%;
+    animation: flame-rise 1s linear infinite;
+    opacity: 0.8;
+}
+@keyframes flame-rise {
+    0% { transform: translateY(0) scale(1); opacity:0.8; }
+    50% { transform: translateY(-15px) scale(1.2); opacity:1; }
+    100% { transform: translateY(-30px) scale(0.8); opacity:0; }
+}
+#streak-popup {
+    position: fixed;
+    top: 25%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: black;
+    padding: 15px 25px;
+    border-radius: 15px;
+    font-weight: bold;
+    font-size: 18px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(250,205,21,.5);
+    display: none;
+    z-index: 1000;
 }
 </style>
 </head>
@@ -149,6 +231,7 @@ button:hover { opacity: 0.85; }
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="dashboard">
+
 <div class="navbar">
     <div class="profile">
         <div class="profile-badge" id="profile-badge">U</div>
@@ -159,12 +242,25 @@ button:hover { opacity: 0.85; }
 
 <div class="balanceCard">Balance: <b id="balance">0</b> VEXA</div>
 <div class="balanceCard">Rate: <b id="rate">0</b> VEXA/min</div>
+<div class="balanceCard">Level: <b id="level">1</b></div>
 
+<!-- XP Bar -->
+<div class="progress-container" style="height:15px;margin-bottom:10px;">
+    <div class="progress-bar" id="xp-bar">0%</div>
+</div>
+
+<!-- Streak -->
+<div class="streak-container">
+    🔥 Streak: <span id="streak-count">0</span> days
+    <div id="flames" class="flames"></div>
+</div>
+
+<!-- Mining Progress -->
 <div class="progress-container">
     <div class="progress-bar" id="progress-bar">0%</div>
 </div>
 
-<button class="mineBtn" onclick="startMining()">⛏ Start Mining</button>
+<button id="mineBtn" class="mineBtn" onclick="startMining()">⛏ Start Mining</button>
 
 <div class="grid">
 <div class="card">
@@ -192,19 +288,24 @@ button:hover { opacity: 0.85; }
 </div>
 </div>
 
+<!-- Popups -->
+<div id="level-up-popup" class="level-up-popup">Level Up!</div>
+<div id="streak-popup" class="level-up-popup" style="background: linear-gradient(135deg,#facc15,#f59e0b);">Streak Bonus!</div>
+
 <script>
-const SUPABASE_URL = "https://kdmknilstonmiesjocvy.supabase.co";
-const SUPABASE_KEY = "YOUR_KEY_HERE";
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const SUPABASE_URL="https://kdmknilstonmiesjocvy.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
+const db = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let user=null, coins=0, auto=1, multi=1, mining=false, mineInterval=null, progress=0;
+let level=1, xp=0, xpNeeded=10, streak=0, miningCount=0;
 
 function randomCode(){ return Math.random().toString(36).substring(2,8); }
 
 async function signup(){
     const { data, error } = await db.auth.signUp({email: email.value, password: password.value});
     if(error){ msg.innerText = error.message; return; }
-    await db.from("users").insert({id:data.user.id,coins:0,auto_power:1,multiplier:1,referral_code:randomCode(),referred_by:refInput.value||null});
+    await db.from("users").insert({id:data.user.id,coins:0,auto_power:1,multiplier:1,referral_code:randomCode(),referred_by:refInput.value||null,level:1,xp:0,streak:0});
     msg.innerText="Account created!";
 }
 
@@ -216,35 +317,37 @@ async function login(){
 }
 
 async function loadUser(){
-    const { data } = await db.from("users").select("*").eq("id",user.id).single();
-    coins = data.coins||0; auto = data.auto_power||1; multi = data.multiplier||1;
-    document.getElementById("username").innerText = user.email.split("@")[0];
-    document.getElementById("profile-badge").innerText = user.email[0].toUpperCase();
-    updateUI(); leaderboard();
+    const { data } = await db.from("users").select("*").eq("id", user.id).single();
+    coins=data.coins||0; auto=data.auto_power||1; multi=data.multiplier||1;
+    level=data.level||1; xp=data.xp||0; streak=data.streak||0;
+    document.getElementById("username").innerText=user.email.split("@")[0];
+    document.getElementById("profile-badge").innerText=user.email[0].toUpperCase();
+    document.getElementById("level").innerText=level;
+    updateUI(); updateXPBar(); updateFlames(); leaderboard();
 }
 
-function updateUI(){ balance.innerText = coins.toFixed(6); rate.innerText = (0.001*auto*multi*60).toFixed(6); }
+function updateUI(){ balance.innerText=coins.toFixed(6); rate.innerText=(0.001*auto*multi*60*getStreakMultiplier()).toFixed(6); }
+function updateXPBar(){ let percent=Math.min((xp/xpNeeded)*100,100); const bar=document.getElementById("xp-bar"); bar.style.width=percent+"%"; bar.innerText=Math.floor(percent)+"%"; }
+function updateFlames(){ const flamesContainer=document.getElementById("flames"); flamesContainer.innerHTML=""; let flameCount=Math.min(streak,5); for(let i=0;i<flameCount;i++){ const f=document.createElement("div"); f.className="flame"; f.style.left=(i*12)+"px"; f.style.animationDelay=(i*0.2)+"s"; flamesContainer.appendChild(f); } document.getElementById("streak-count").innerText=streak; }
 
-// Animate coin drop
-function dropCoin(){
-    const coin = document.createElement("div");
-    coin.className="coin";
-    coin.style.left = (Math.random()*window.innerWidth*0.8 + 20) + "px";
-    document.body.appendChild(coin);
-    setTimeout(()=>{ coin.remove(); },1000);
-}
+function dropCoin(){ const coin=document.createElement("div"); coin.className="coin"; coin.style.left=(Math.random()*window.innerWidth*0.8+20)+"px"; document.body.appendChild(coin); setTimeout(()=>{coin.remove();},1000); }
 
-// Mining with progress bar & coin drop
+function gainXP(amount){ xp+=amount; while(xp>=xpNeeded){ xp-=xpNeeded; level++; streak++; xpNeeded=Math.floor(xpNeeded*1.5); showLevelUpPopup(); updateFlames(); } updateXPBar(); db.from("users").update({level,xp,streak}).eq("id",user.id); }
+function showLevelUpPopup(){ const popup=document.getElementById("level-up-popup"); popup.innerText=`🎉 Level Up! You are now Level ${level}`; popup.style.display="block"; setTimeout(()=>{popup.style.display="none";},2000); }
+
+function getStreakMultiplier(){ if(streak>=20) return 3; if(streak>=10) return 2; return 1; }
+function addStreakReward(){ streak++; coins+=streak*0.01; updateFlames(); showStreakPopup(streak); db.from("users").update({streak,coins}).eq("id",user.id); }
+function showStreakPopup(streakCount){ const popup=document.getElementById("streak-popup"); popup.innerText=`🔥 Streak Bonus! +${(streakCount*0.01).toFixed(2)} VEXA`; popup.style.display="block"; setTimeout(()=>{ popup.style.display="none"; },2000); }
+
 function startMining(){
     if(mining) return; mining=true; mineBtn.disabled=true; progress=0;
     mineInterval=setInterval(async()=>{
-        coins += 0.001*auto*multi;
-        updateUI();
-        dropCoin(); // drop animated coin
-        progress += 0.5; // adjust speed
-        if(progress>100) progress=100;
-        const pb=document.getElementById("progress-bar");
-        pb.style.width=progress+"%"; pb.innerText=Math.floor(progress)+"%";
+        let streakBoost=getStreakMultiplier();
+        let reward=0.001*auto*multi*streakBoost;
+        coins+=reward; updateUI(); dropCoin(); gainXP(0.1*streakBoost);
+        miningCount++; if(miningCount%5===0){ addStreakReward(); }
+        progress+=0.5; if(progress>100) progress=100;
+        const pb=document.getElementById("progress-bar"); pb.style.width=progress+"%"; pb.innerText=Math.floor(progress)+"%";
         await db.from("users").update({coins}).eq("id",user.id);
     },1000);
 }
@@ -252,20 +355,11 @@ function startMining(){
 async function upgradeAuto(){ if(coins<10){ alert("Need 10 coins"); return; } coins-=10; auto++; await db.from("users").update({coins,auto_power:auto}).eq("id",user.id); updateUI();}
 async function upgradeMulti(){ if(coins<25){ alert("Need 25 coins"); return; } coins-=25; multi*=2; await db.from("users").update({coins,multiplier:multi}).eq("id",user.id); updateUI();}
 
-async function daily(){
-    const { data } = await db.from("users").select("last_daily").eq("id",user.id).single();
-    let last = new Date(data.last_daily); let now = new Date();
-    if(last && now-last<24*60*60*1000){ alert("Daily bonus claimed!"); return; }
-    coins+=0.01; await db.from("users").update({coins,last_daily:now.toISOString()}).eq("id",user.id); updateUI();
-}
+async function daily(){ const { data }=await db.from("users").select("last_daily").eq("id",user.id).single(); let last=new Date(data.last_daily||0); let now=new Date(); if(last && now-last<24*60*60*1000){ alert("Daily bonus claimed!"); return; } coins+=0.01; await db.from("users").update({coins,last_daily:now.toISOString()}).eq("id",user.id); updateUI(); }
 
 async function withdraw(){ if(!amount.value||!wallet.value){ alert("Fill wallet and amount"); return; } await db.from("withdrawals").insert({user_id:user.id,amount:amount.value,wallet:wallet.value}); alert("Withdrawal request sent!"); }
 
-async function leaderboard(){
-    const { data } = await db.from("users").select("email,coins").order("coins",{ascending:false}).limit(10);
-    leaderboard.innerHTML=""; if(!data) return;
-    data.forEach(u=>{leaderboard.innerHTML+=`<p>${u.email.split("@")[0]} — ${Number(u.coins||0).toFixed(3)} VEXA</p>`;});
-}
+async function leaderboard(){ const { data } = await db.from("users").select("email,coins").order("coins",{ascending:false}).limit(10); leaderboard.innerHTML=""; if(!data) return; data.forEach(u=>{leaderboard.innerHTML+=`<p>${u.email.split("@")[0]} — ${Number(u.coins||0).toFixed(3)} VEXA</p>`;}); }
 
 async function logout(){ clearInterval(mineInterval); await db.auth.signOut(); location.reload(); }
 </script>
