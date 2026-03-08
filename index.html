@@ -1,16 +1,17 @@
 <!DOCTYPE html>
+
 <html>
 <head>
 <meta charset="UTF-8">
-<title>VEXA Mining PRO</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VEXA Mining v3</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 
 body{
-background:#0b0f1a;
+background:linear-gradient(135deg,#0b0f1a,#1c1f2a);
 color:white;
 font-family:Arial;
 display:flex;
@@ -21,17 +22,23 @@ padding:20px;
 .card{
 background:#111827;
 padding:25px;
-border-radius:15px;
+border-radius:16px;
 width:420px;
 box-shadow:0 0 25px rgba(0,255,255,.2);
 }
 
-button{
+h2{color:#22d3ee;text-align:center}
+
+input,button{
 width:100%;
-padding:12px;
+padding:10px;
 margin:6px 0;
 border:none;
 border-radius:8px;
+font-size:14px;
+}
+
+button{
 background:#22d3ee;
 font-weight:bold;
 cursor:pointer;
@@ -42,32 +49,17 @@ background:#1f2937;
 color:white;
 }
 
-input{
-width:100%;
-padding:10px;
-margin:6px 0;
-border-radius:8px;
-border:none;
-}
+.hidden{display:none}
 
-.hidden{
-display:none;
-}
+.stat{margin:8px 0}
 
-#progressContainer{
-height:20px;
-background:#1f2937;
-border-radius:10px;
-overflow:hidden;
-}
-
-#progressBar{
-height:100%;
-width:0%;
-background:#00e5ff;
+#leaderboard p{
+margin:3px 0;
+font-size:13px;
 }
 
 </style>
+
 </head>
 
 <body>
@@ -80,10 +72,9 @@ background:#00e5ff;
 
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
-<input id="referral" placeholder="Referral Code (optional)">
+<input id="refInput" placeholder="Referral Code (optional)">
 
-<button onclick="signup()">Sign Up</button>
-<button onclick="login()">Login</button>
+<button onclick="signup()">Sign Up</button> <button onclick="login()">Login</button>
 
 <p id="msg"></p>
 
@@ -93,24 +84,18 @@ background:#00e5ff;
 
 <h2>Dashboard</h2>
 
-<p>Balance: <b id="balance">0</b> VEXA</p>
+<div class="stat">Balance: <b id="balance">0</b> VEXA</div>
 
-<p>Rate: <b id="rate">0.001</b> / min</p>
+<div class="stat">Mining Rate: <b id="rate"></b> / min</div>
 
-<p>Your Referral Code:</p>
+<div class="stat">Your Referral Code:</div>
 <b id="refCode"></b>
 
-<button onclick="startMining()">Start Mining</button>
-<button onclick="stopMining()" class="secondary">Stop Mining</button>
-
-<div id="progressContainer">
-<div id="progressBar"></div>
-</div>
+<button onclick="startMining()">⛏ Start 24h Mining</button>
 
 <h3>Upgrades</h3>
 
-<button onclick="upgrade('auto',10)">Auto Power +1 (10)</button>
-<button onclick="upgrade('multi',25)">Multiplier x2 (25)</button>
+<button onclick="upgrade('auto',10)">Auto Power +1 (10)</button> <button onclick="upgrade('multi',25)">Multiplier x2 (25)</button>
 
 <h3>Daily Bonus</h3>
 
@@ -118,10 +103,9 @@ background:#00e5ff;
 
 <h3>Withdraw</h3>
 
-<input id="wallet" placeholder="Wallet address">
+<input id="wallet" placeholder="Wallet Address">
 <input id="amount" placeholder="Amount">
-
-<button onclick="withdraw()">Request Withdraw</button>
+<button onclick="withdraw()">Request Withdrawal</button>
 
 <h3>Leaderboard</h3>
 
@@ -135,16 +119,16 @@ background:#00e5ff;
 
 <script>
 
-const url="https://kdmknilstonmiesjocvy.supabase.co"
-const key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE"
+const SUPABASE_URL="https://kdmknilstonmiesjocvy.supabase.co"
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE"
 
-const db=supabase.createClient(url,key)
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY)
 
 let user
 let coins=0
 let auto=1
 let multi=1
-let mining=null
+let lastMine=null
 
 function randomCode(){
 return Math.random().toString(36).substring(2,8)
@@ -159,12 +143,12 @@ password:password.value
 
 if(error){msg.innerText=error.message;return}
 
-const code=randomCode()
+let ref=refInput.value||null
 
 await db.from("users").insert({
 id:data.user.id,
-referral_code:code,
-referred_by:referral.value||null
+referral_code:randomCode(),
+referred_by:ref
 })
 
 msg.innerText="Account created"
@@ -200,12 +184,48 @@ const {data}=await db
 coins=data.coins
 auto=data.auto_power
 multi=data.multiplier
+lastMine=data.last_mine
 
 refCode.innerText=data.referral_code
 
+calculateOfflineMining()
+
 updateUI()
 
-leaderboardLoad()
+leaderboard()
+
+}
+
+function calculateOfflineMining(){
+
+if(!lastMine)return
+
+let last=new Date(lastMine)
+let now=new Date()
+
+let minutes=(now-last)/60000
+
+let rate=0.001*auto*multi
+
+let earned=minutes*rate
+
+coins+=earned
+
+saveCoins()
+
+}
+
+async function saveCoins(){
+
+await db
+.from("users")
+.update({
+coins:coins,
+last_mine:new Date()
+})
+.eq("id",user.id)
+
+updateUI()
 
 }
 
@@ -217,37 +237,20 @@ rate.innerText=(0.001*auto*multi).toFixed(6)
 
 }
 
-function startMining(){
-
-if(mining)return
-
-mining=setInterval(async()=>{
-
-let amount=0.001*auto*multi
-
-coins+=amount
+async function startMining(){
 
 await db
 .from("users")
-.update({coins:coins})
+.update({last_mine:new Date()})
 .eq("id",user.id)
 
-updateUI()
-
-},60000)
-
-}
-
-function stopMining(){
-
-clearInterval(mining)
-mining=null
+alert("Mining started for 24 hours")
 
 }
 
 async function upgrade(type,cost){
 
-if(coins<cost)return alert("Not enough")
+if(coins<cost){alert("Not enough coins");return}
 
 coins-=cost
 
@@ -266,9 +269,27 @@ updateUI()
 
 async function daily(){
 
+const {data}=await db
+.from("users")
+.select("last_daily")
+.eq("id",user.id)
+.single()
+
+let last=data.last_daily
+
+if(last && Date.now()-new Date(last)<86400000){
+
+alert("Daily already claimed")
+
+return
+}
+
 coins+=0.01
 
-await db.from("users").update({coins:coins}).eq("id",user.id)
+await db.from("users").update({
+coins:coins,
+last_daily:new Date()
+}).eq("id",user.id)
 
 updateUI()
 
@@ -286,18 +307,19 @@ alert("Withdraw request sent")
 
 }
 
-async function leaderboardLoad(){
+async function leaderboard(){
 
 const {data}=await db
 .from("users")
 .select("coins")
 .order("coins",{ascending:false})
-.limit(5)
+.limit(10)
 
 leaderboard.innerHTML=""
 
 data.forEach(u=>{
-leaderboard.innerHTML+=`<p>${Number(u.coins).toFixed(3)} VEXA</p>`
+leaderboard.innerHTML+=
+`<p>${Number(u.coins).toFixed(3)} VEXA</p>`
 })
 
 }
@@ -305,9 +327,27 @@ leaderboard.innerHTML+=`<p>${Number(u.coins).toFixed(3)} VEXA</p>`
 async function logout(){
 
 await db.auth.signOut()
+
 location.reload()
 
 }
+
+(async()=>{
+
+const {data:{session}}=await db.auth.getSession()
+
+if(session){
+
+user=session.user
+
+auth.classList.add("hidden")
+app.classList.remove("hidden")
+
+loadUser()
+
+}
+
+})()
 
 </script>
 
