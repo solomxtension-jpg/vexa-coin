@@ -181,9 +181,9 @@ const {data}=await db
 .eq("id",user.id)
 .single()
 
-coins=data.coins
-auto=data.auto_power
-multi=data.multiplier
+coins=data.coins || 0
+auto=data.auto_power || 1
+multi=data.multiplier || 1
 lastMine=data.last_mine
 
 refCode.innerText=data.referral_code
@@ -239,10 +239,12 @@ rate.innerText=(0.001*auto*multi).toFixed(6)
 
 async function startMining(){
 
+if(!user){
+alert("Login first")
+return
+}
+
 await db
-.from("users")
-.update({last_mine:new Date()})
-.eq("id",user.id)
 
 alert("Mining started for 24 hours")
 
@@ -309,17 +311,26 @@ alert("Withdraw request sent")
 
 async function leaderboard(){
 
-const {data}=await db
+const {data,error}=await db
 .from("users")
 .select("coins")
 .order("coins",{ascending:false})
 .limit(10)
 
+if(error){
+console.log(error)
+return
+}
+
+if(!data){
+leaderboard.innerHTML="No miners yet"
+return
+}
+
 leaderboard.innerHTML=""
 
 data.forEach(u=>{
-leaderboard.innerHTML+=
-`<p>${Number(u.coins).toFixed(3)} VEXA</p>`
+leaderboard.innerHTML+=`<p>${Number(u.coins||0).toFixed(3)} VEXA</p>`
 })
 
 }
@@ -329,8 +340,6 @@ async function logout(){
 await db.auth.signOut()
 
 location.reload()
-
-}
 
 (async()=>{
 
