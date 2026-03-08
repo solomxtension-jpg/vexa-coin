@@ -108,7 +108,6 @@ button.secondary {
   0% { opacity: 1; transform: translateY(0); }
   100% { opacity: 0; transform: translateY(-60px); }
 }
-
 </style>
 </head>
 
@@ -122,8 +121,8 @@ button.secondary {
     <input id="emailInput" type="email" placeholder="Email">
     <input id="passwordInput" type="password" placeholder="Password">
     <input id="refInput" type="text" placeholder="Referral code (optional)">
-    <button onclick="signUp()">Sign Up</button>
-    <button onclick="login()">Login</button>
+    <button id="signupBtn">Sign Up</button>
+    <button id="loginBtn">Login</button>
     <p id="authMsg"></p>
   </div>
 
@@ -134,17 +133,17 @@ button.secondary {
     <p>Mining Rate: <b><span id="rate">1</span></b>/tick</p>
     <p>Mining Status: <b id="miningStatus">Inactive</b></p>
 
-    <button id="mineBtn" class="mineBtn" onclick="startMining()">⛏ Start Mining</button>
-    <button onclick="stopMining()" class="secondary">Stop Mining</button>
+    <button id="mineBtn" class="mineBtn">⛏ Start Mining</button>
+    <button id="stopBtn" class="secondary">Stop Mining</button>
 
     <div id="progressContainer"><div id="progressBar"></div></div>
 
     <h2>Upgrades</h2>
-    <button onclick="buyUpgrade('autoPower', 10)">Auto Power (+1) - 10 VEXA</button>
-    <button onclick="buyUpgrade('multiplier', 25)">Multiplier x2 - 25 VEXA</button>
-    <button onclick="buyUpgrade('speed', 50)">Faster Mining - 50 VEXA</button>
+    <button id="upgradeAuto">Auto Power (+1) - 10 VEXA</button>
+    <button id="upgradeMulti">Multiplier x2 - 25 VEXA</button>
+    <button id="upgradeSpeed">Faster Mining - 50 VEXA</button>
 
-    <button onclick="logout()" class="secondary">Logout</button>
+    <button id="logoutBtn" class="secondary">Logout</button>
   </div>
 
 </div>
@@ -165,20 +164,35 @@ let miningInterval = null;
 let progressInterval = null;
 let mining = false;
 
-/* ================= AUTH ================= */
-async function signUp(){
+/* ================= ELEMENTS ================= */
+const authDiv = document.getElementById("auth");
+const appDiv = document.getElementById("app");
+const emailInput = document.getElementById("emailInput");
+const passwordInput = document.getElementById("passwordInput");
+const refInput = document.getElementById("refInput");
+const authMsg = document.getElementById("authMsg");
+const balanceEl = document.getElementById("balance");
+const rateEl = document.getElementById("rate");
+const miningStatus = document.getElementById("miningStatus");
+const mineBtn = document.getElementById("mineBtn");
+const progressBar = document.getElementById("progressBar");
+
+/* ================= AUTH HANDLERS ================= */
+document.getElementById("signupBtn").onclick = async ()=>{
   const email = emailInput.value;
   const password = passwordInput.value;
   const referral = refInput.value;
 
+  if(!email || !password){ authMsg.innerText = "Enter email and password"; return; }
+
   const { data, error } = await supabase.auth.signUp({ email, password });
   if(error){ authMsg.innerText = error.message; return; }
 
-  // Create user in DB
+  // Insert into users table
   const code = Math.random().toString(36).substring(2, 8);
   await supabase.from("users").insert({
     id: data.user.id,
-    coins: 0,
+    coins:0,
     auto_power:1,
     multiplier:1,
     speed:5000,
@@ -189,30 +203,32 @@ async function signUp(){
   // Give referral bonus
   if(referral){
     const { data: refUser } = await supabase.from("users").select("*").eq("referral_code", referral).single();
-    if(refUser){
-      await supabase.from("users").update({ coins: refUser.coins + 0.1 }).eq("id", refUser.id);
-    }
+    if(refUser) await supabase.from("users").update({ coins: refUser.coins+0.1 }).eq("id", refUser.id);
   }
 
   authMsg.innerText = "Signup successful! Login now.";
-}
+};
 
-async function login(){
+document.getElementById("loginBtn").onclick = async ()=>{
   const email = emailInput.value;
   const password = passwordInput.value;
+
+  if(!email || !password){ authMsg.innerText = "Enter email and password"; return; }
+
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if(error){ authMsg.innerText = error.message; return; }
 
   currentUser = data.user;
-  auth.classList.add("hidden");
-  app.classList.remove("hidden");
-  loadUser();
-}
+  authDiv.classList.add("hidden");
+  appDiv.classList.remove("hidden");
+  await loadUser();
+};
 
-async function logout(){
+/* ================= LOGOUT ================= */
+document.getElementById("logoutBtn").onclick = async ()=>{
   await supabase.auth.signOut();
   location.reload();
-}
+};
 
 /* ================= LOAD USER ================= */
 async function loadUser(){
@@ -230,6 +246,9 @@ async function loadUser(){
 }
 
 /* ================= MINING ================= */
+mineBtn.onclick = startMining;
+document.getElementById("stopBtn").onclick = stopMining;
+
 function startMining(){
   if(mining) return;
   mining = true;
@@ -238,69 +257,70 @@ function startMining(){
 
   // Animate progress bar every second
   progressInterval = setInterval(()=>{
-    let width = parseInt(progressBar.style.width) || 0;
+    let width = parseInt(progressBar.style.width)||0;
     width += 2;
     if(width>100) width=0;
     progressBar.style.width = width+"%";
     showCoin();
-  }, 1000);
+  },1000);
 
   // Add coins every 60 seconds
   miningInterval = setInterval(async ()=>{
     const miningAmount = 0.001 * autoPower * multiplier;
-    coins = Number(coins) + miningAmount;
-
+    coins = Number(coins)+miningAmount;
     const { error } = await supabase.from("users").update({ coins }).eq("id", currentUser.id);
     if(error) console.log(error);
-
     updateUI();
-  }, 60000);
+  },60000);
 }
 
 function stopMining(){
-  mining = false;
+  mining=false;
   mineBtn.classList.remove("active");
   miningStatus.innerText = "Inactive";
   clearInterval(miningInterval);
   clearInterval(progressInterval);
-  progressBar.style.width = "0%";
+  progressBar.style.width="0%";
 }
 
 /* ================= UPGRADES ================= */
-async function buyUpgrade(type, cost){
-  if(coins < cost){ alert("Not enough coins"); return; }
-  coins -= cost;
-  if(type==="autoPower") autoPower += 1;
-  if(type==="multiplier") multiplier *= 2;
-  if(type==="speed") miningSpeed = Math.max(1000, miningSpeed - 500);
+document.getElementById("upgradeAuto").onclick = ()=>buyUpgrade("autoPower",10);
+document.getElementById("upgradeMulti").onclick = ()=>buyUpgrade("multiplier",25);
+document.getElementById("upgradeSpeed").onclick = ()=>buyUpgrade("speed",50);
 
+async function buyUpgrade(type, cost){
+  if(coins<cost){ alert("Not enough coins"); return; }
+  coins -= cost;
+  if(type==="autoPower") autoPower+=1;
+  if(type==="multiplier") multiplier*=2;
+  if(type==="speed") miningSpeed = Math.max(1000,miningSpeed-500);
   await supabase.from("users").update({ coins, auto_power:autoPower, multiplier, speed:miningSpeed }).eq("id", currentUser.id);
   stopMining(); startMining(); updateUI();
 }
 
 /* ================= UI ================= */
 function updateUI(){
-  balance.innerText = coins.toFixed(6);
-  rate.innerText = (autoPower * multiplier).toFixed(1);
+  balanceEl.innerText = coins.toFixed(6);
+  rateEl.innerText = (autoPower*multiplier).toFixed(1);
 }
 
 function showCoin(){
   const coin = document.createElement("div");
-  coin.className = "floating-coin";
-  coin.innerText = "🪙";
+  coin.className="floating-coin";
+  coin.innerText="🪙";
   document.querySelector(".card").appendChild(coin);
-  coin.style.left = Math.random() * 80 + "%";
-  setTimeout(()=>coin.remove(), 1000);
+  coin.style.left=Math.random()*80+"%";
+  setTimeout(()=>coin.remove(),1000);
 }
 
 /* ================= AUTO LOGIN ================= */
 (async()=>{
-  const { data:{ session } } = await supabase.auth.getSession();
+  const { data:{session} } = await supabase.auth.getSession();
   if(session){
     currentUser = session.user;
-    auth.classList.add("hidden");
-    app.classList.remove("hidden");
-    loadUser();
+    authDiv.classList.add("hidden");
+    appDiv.classList.remove("hidden");
+    await loadUser();
   }
 })();
 </script>
