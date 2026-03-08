@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VEXA Mining</title>
+<title>VEXA Mining Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -20,7 +20,7 @@ body {
 }
 .auth, .dashboard {
     max-width: 400px;
-    margin: 100px auto;
+    margin: 80px auto;
     background: #111827;
     padding: 30px;
     border-radius: 15px;
@@ -45,22 +45,13 @@ button {
     margin-top: 12px;
     border: none;
     border-radius: 8px;
-    background: #22d3ee;
     font-weight: bold;
     cursor: pointer;
     transition: 0.2s;
 }
-button:hover {
-    background: #0bc5ea;
-}
-.dashboard {
-    display: none;
-}
-.header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-}
+button:hover { opacity: 0.85; }
+.dashboard { display: none; }
+.header { display: flex; justify-content: space-between; margin-bottom: 20px; }
 .balanceCard {
     background: #111827;
     padding: 20px;
@@ -74,39 +65,42 @@ button:hover {
     font-size: 18px;
     border: none;
     border-radius: 12px;
-    background: #22d3ee;
+    background: linear-gradient(90deg,#22d3ee,#0bc5ea);
     cursor: pointer;
     box-shadow: 0 0 20px #22d3ee;
     margin-bottom: 20px;
 }
-.grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-.card {
-    background: #111827;
-    padding: 20px;
+.progress-container {
+    width: 100%;
+    background: #1f2937;
     border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 15px;
 }
-.card h3 {
-    margin-top: 0;
+.progress-bar {
+    width: 0%;
+    height: 20px;
+    background: #22d3ee;
+    text-align: center;
+    color: black;
+    font-weight: bold;
+    transition: width 0.5s;
 }
-#leaderboard p {
-    margin: 4px 0;
-    font-size: 14px;
-}
-.logout {
-    margin-top: 20px;
-    background: #ef4444;
-}
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.card { background: #111827; padding: 20px; border-radius: 12px; }
+.card h3 { margin-top: 0; }
+.upgrade-btn { background: linear-gradient(90deg,#22d3ee,#0bc5ea); margin-top:8px; }
+.daily-btn { background: linear-gradient(90deg,#facc15,#f59e0b); }
+.withdraw-btn { background: linear-gradient(90deg,#ef4444,#dc2626); }
+#leaderboard p { margin: 4px 0; font-size: 14px; }
+.logout { margin-top: 20px; background: #ef4444; }
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="auth" class="auth">
-<h1>VEXA Mining</h1>
+<h1>VEXA Mining Pro</h1>
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
 <input id="refInput" placeholder="Referral Code (optional)">
@@ -122,25 +116,29 @@ button:hover {
 <div class="balanceCard">Rate: <b id="rate">0</b> VEXA/min</div>
 </div>
 
+<div class="progress-container">
+    <div class="progress-bar" id="progress-bar">0%</div>
+</div>
+
 <button class="mineBtn" onclick="startMining()">⛏ Start Mining</button>
 
 <div class="grid">
 <div class="card">
 <h3>Upgrades</h3>
-<button onclick="upgradeAuto()">Auto Power +1 (10)</button>
-<button onclick="upgradeMulti()">Multiplier x2 (25)</button>
+<button class="upgrade-btn" onclick="upgradeAuto()">Auto Power +1 (10)</button>
+<button class="upgrade-btn" onclick="upgradeMulti()">Multiplier x2 (25)</button>
 </div>
 
 <div class="card">
 <h3>Daily Bonus</h3>
-<button onclick="daily()">Claim 0.01</button>
+<button class="daily-btn" onclick="daily()">Claim 0.01</button>
 </div>
 
 <div class="card">
 <h3>Withdraw</h3>
 <input id="wallet" placeholder="Wallet">
 <input id="amount" placeholder="Amount">
-<button onclick="withdraw()">Request Withdrawal</button>
+<button class="withdraw-btn" onclick="withdraw()">Request Withdrawal</button>
 </div>
 
 <div class="card">
@@ -157,136 +155,98 @@ const SUPABASE_URL = "https://kdmknilstonmiesjocvy.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let user = null;
-let coins = 0;
-let auto = 1;
-let multi = 1;
-let mining = false;
-let mineInterval = null;
+let user=null, coins=0, auto=1, multi=1, mining=false, mineInterval=null, progress=0;
 
+// Helpers
 function randomCode(){ return Math.random().toString(36).substring(2,8); }
+function animateBalance(oldVal, newVal){
+    let start = oldVal, end = newVal, duration = 500, stepTime = 50;
+    let steps = duration/stepTime, increment = (end-start)/steps, current = start;
+    let timer = setInterval(()=>{
+        current += increment;
+        balance.innerText = current.toFixed(6);
+        steps--;
+        if(steps<=0) clearInterval(timer);
+    }, stepTime);
+}
 
-// SIGNUP
+// Signup
 async function signup(){
-    const { data, error } = await db.auth.signUp({
-        email: email.value,
-        password: password.value
-    });
+    const { data, error } = await db.auth.signUp({email: email.value, password: password.value});
     if(error){ msg.innerText = error.message; return; }
     await db.from("users").insert({
-        id: data.user.id,
-        coins: 0,
-        auto_power: 1,
-        multiplier: 1,
-        referral_code: randomCode(),
-        referred_by: refInput.value || null
+        id: data.user.id, coins:0, auto_power:1, multiplier:1,
+        referral_code: randomCode(), referred_by: refInput.value||null
     });
     msg.innerText = "Account created successfully!";
 }
 
-// LOGIN
+// Login
 async function login(){
-    const { data, error } = await db.auth.signInWithPassword({
-        email: email.value,
-        password: password.value
-    });
+    const { data, error } = await db.auth.signInWithPassword({email: email.value, password: password.value});
     if(error){ msg.innerText = error.message; return; }
     if(!data.user){ msg.innerText = "Login failed!"; return; }
-
     user = data.user;
-    auth.style.display = "none";
-    dashboard.style.display = "block";
+    auth.style.display="none"; dashboard.style.display="block";
     loadUser();
 }
 
-// LOAD USER DATA
+// Load user data
 async function loadUser(){
     const { data } = await db.from("users").select("*").eq("id", user.id).single();
-    coins = data.coins || 0;
-    auto = data.auto_power || 1;
-    multi = data.multiplier || 1;
-    updateUI();
-    leaderboard();
+    coins = data.coins||0; auto = data.auto_power||1; multi = data.multiplier||1;
+    updateUI(); leaderboard();
 }
 
-// UPDATE UI
-function updateUI(){
+// Update UI
+function updateUI(){ 
     balance.innerText = coins.toFixed(6);
-    rate.innerText = (0.001*auto*multi*60).toFixed(6); // per min
+    rate.innerText = (0.001*auto*multi*60).toFixed(6);
 }
 
-// START MINING
+// Mining with progress bar
 function startMining(){
     if(mining) return;
-    mining = true;
-    mineBtn.disabled = true;
+    mining = true; mineBtn.disabled=true; progress=0;
     mineInterval = setInterval(async()=>{
-        let reward = 0.001*auto*multi;
-        coins += reward;
+        progress += (0.001*auto*multi)*100; 
+        if(progress>100) progress=100;
+        document.getElementById("progress-bar").style.width = progress+"%";
+        document.getElementById("progress-bar").innerText = Math.floor(progress)+"%";
+
+        coins += 0.001*auto*multi;
         await db.from("users").update({coins}).eq("id", user.id);
         updateUI();
-    }, 1000); // 1 second for demo; change to 60000 for production
+    },1000);
 }
 
-// UPGRADES
-async function upgradeAuto(){
-    if(coins < 10){ alert("Need 10 coins"); return; }
-    coins -= 10;
-    auto++;
-    await db.from("users").update({coins, auto_power: auto}).eq("id", user.id);
-    updateUI();
-}
+// Upgrades
+async function upgradeAuto(){ if(coins<10){ alert("Need 10 coins"); return; } coins-=10; auto++; await db.from("users").update({coins, auto_power:auto}).eq("id", user.id); updateUI();}
+async function upgradeMulti(){ if(coins<25){ alert("Need 25 coins"); return; } coins-=25; multi*=2; await db.from("users").update({coins, multiplier:multi}).eq("id", user.id); updateUI();}
 
-async function upgradeMulti(){
-    if(coins < 25){ alert("Need 25 coins"); return; }
-    coins -= 25;
-    multi *= 2;
-    await db.from("users").update({coins, multiplier: multi}).eq("id", user.id);
-    updateUI();
-}
-
-// DAILY BONUS
+// Daily Bonus
 async function daily(){
     const { data } = await db.from("users").select("last_daily").eq("id", user.id).single();
-    let last = new Date(data.last_daily);
-    let now = new Date();
-    if(last && now - last < 24*60*60*1000){
-        alert("Daily bonus already claimed!");
-        return;
-    }
+    let last = new Date(data.last_daily); let now = new Date();
+    if(last && now - last < 24*60*60*1000){ alert("Daily bonus claimed!"); return; }
     coins += 0.01;
     await db.from("users").update({coins, last_daily: now.toISOString()}).eq("id", user.id);
     updateUI();
 }
 
-// WITHDRAW
-async function withdraw(){
-    if(!amount.value || !wallet.value){ alert("Fill wallet and amount"); return; }
-    await db.from("withdrawals").insert({
-        user_id: user.id,
-        amount: amount.value,
-        wallet: wallet.value
-    });
-    alert("Withdrawal request sent!");
-}
+// Withdraw
+async function withdraw(){ if(!amount.value||!wallet.value){ alert("Fill wallet and amount"); return; }
+await db.from("withdrawals").insert({user_id:user.id, amount: amount.value, wallet: wallet.value}); alert("Withdrawal request sent!"); }
 
-// LEADERBOARD
+// Leaderboard
 async function leaderboard(){
-    const { data } = await db.from("users").select("email, coins").order("coins", {ascending:false}).limit(10);
-    leaderboard.innerHTML = "";
-    if(!data) return;
-    data.forEach(u=>{
-        leaderboard.innerHTML += `<p>${u.email} — ${Number(u.coins||0).toFixed(3)} VEXA</p>`;
-    });
+    const { data } = await db.from("users").select("email, coins").order("coins",{ascending:false}).limit(10);
+    leaderboard.innerHTML=""; if(!data) return;
+    data.forEach(u=>{leaderboard.innerHTML+=`<p>${u.email} — ${Number(u.coins||0).toFixed(3)} VEXA</p>`;});
 }
 
-// LOGOUT
-async function logout(){
-    clearInterval(mineInterval);
-    await db.auth.signOut();
-    location.reload();
-}
+// Logout
+async function logout(){ clearInterval(mineInterval); await db.auth.signOut(); location.reload(); }
 </script>
-
 </body>
 </html>
