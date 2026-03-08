@@ -11,51 +11,52 @@
 <style>
 
 body{
-background:linear-gradient(135deg,#0b0f1a,#1c1f2a);
+background:#0b0f1a;
 color:white;
 font-family:Arial;
 display:flex;
 justify-content:center;
-padding:20px;
+padding:20px
 }
 
 .card{
 background:#111827;
 padding:25px;
-border-radius:16px;
+border-radius:15px;
 width:420px;
-box-shadow:0 0 25px rgba(0,255,255,.2);
+box-shadow:0 0 25px rgba(0,255,255,.2)
 }
 
-h2{color:#22d3ee;text-align:center}
+h2{
+text-align:center;
+color:#22d3ee
+}
 
 input,button{
 width:100%;
 padding:10px;
 margin:6px 0;
 border:none;
-border-radius:8px;
-font-size:14px;
+border-radius:8px
 }
 
 button{
 background:#22d3ee;
 font-weight:bold;
-cursor:pointer;
+cursor:pointer
 }
 
 .secondary{
 background:#1f2937;
-color:white;
+color:white
 }
 
-.hidden{display:none}
-
-.stat{margin:8px 0}
+.hidden{
+display:none
+}
 
 #leaderboard p{
-margin:3px 0;
-font-size:13px;
+margin:3px 0
 }
 
 </style>
@@ -84,14 +85,14 @@ font-size:13px;
 
 <h2>Dashboard</h2>
 
-<div class="stat">Balance: <b id="balance">0</b> VEXA</div>
+<p>Balance: <b id="balance">0</b> VEXA</p>
 
-<div class="stat">Mining Rate: <b id="rate">1</b> / min</div>
+<p>Mining Rate: <b id="rate"></b> / minute</p>
 
-<div class="stat">Your Referral Code:</div>
+<p>Your Referral Code:</p>
 <b id="refCode"></b>
 
-<button onclick="startMining()">⛏ Start 24h Mining</button>
+<button onclick="startMining()">⛏ Start Mining</button> <button onclick="stopMining()" class="secondary">Stop Mining</button>
 
 <h3>Upgrades</h3>
 
@@ -119,16 +120,16 @@ font-size:13px;
 
 <script>
 
-const SUPABASE_URL="https://kdmknilstonmiesjocvy.supabase.co"
-const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE"
+const SUPABASE_URL="YOUR_SUPABASE_URL"
+const SUPABASE_KEY="YOUR_SUPABASE_ANON_KEY"
 
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY)
 
-let user
+let user=null
 let coins=0
 let auto=1
 let multi=1
-let lastMine=null
+let miningInterval=null
 
 function randomCode(){
 return Math.random().toString(36).substring(2,8)
@@ -141,17 +142,23 @@ email:email.value,
 password:password.value
 })
 
-if(error){msg.innerText=error.message;return}
+if(error){
+msg.innerText=error.message
+return
+}
 
-let ref=refInput.value||null
+let code=randomCode()
 
 await db.from("users").insert({
 id:data.user.id,
-referral_code:randomCode(),
-referred_by:ref
+coins:0,
+auto_power:1,
+multiplier:1,
+referral_code:code,
+referred_by:refInput.value||null
 })
 
-msg.innerText="Account created successfully"
+msg.innerText="Account created"
 
 }
 
@@ -162,7 +169,10 @@ email:email.value,
 password:password.value
 })
 
-if(error){msg.innerText=error.message;return}
+if(error){
+msg.innerText=error.message
+return
+}
 
 user=data.user
 
@@ -175,57 +185,26 @@ loadUser()
 
 async function loadUser(){
 
-const {data}=await db
+const {data,error}=await db
 .from("users")
 .select("*")
 .eq("id",user.id)
 .single()
 
-coins=data.coins || 0
-auto=data.auto_power || 1
-multi=data.multiplier || 1
-lastMine=data.last_mine
+if(error){
+console.log(error)
+return
+}
 
-refCode.innerText=data.referral_code
+coins=data.coins||0
+auto=data.auto_power||1
+multi=data.multiplier||1
 
-calculateOfflineMining()
+refCode.innerText=data.referral_code||""
 
 updateUI()
 
 leaderboard()
-
-}
-
-function calculateOfflineMining(){
-
-if(!lastMine)return
-
-let last=new Date(lastMine)
-let now=new Date()
-
-let minutes=(now-last)/60000
-
-let rate=0.001*auto*multi
-
-let earned=minutes*rate
-
-coins+=earned
-
-saveCoins()
-
-}
-
-async function saveCoins(){
-
-await db
-.from("users")
-.update({
-coins:coins,
-last_mine:new Date()
-})
-.eq("id",user.id)
-
-updateUI()
 
 }
 
@@ -237,27 +216,53 @@ rate.innerText=(0.001*auto*multi).toFixed(6)
 
 }
 
-async function startMining(){
+function startMining(){
 
-if(!user){
-alert("Login first")
-return
-}
+if(miningInterval) return
+
+miningInterval=setInterval(async()=>{
+
+let amount=0.001*auto*multi
+
+coins+=amount
 
 await db
+.from("users")
+.update({coins:coins})
+.eq("id",user.id)
 
-alert()
+updateUI()
+
+},60000)
+
+alert("Mining started")
+
+}
+
+function stopMining(){
+
+clearInterval(miningInterval)
+
+miningInterval=null
 
 }
 
 async function upgrade(type,cost){
 
-if(coins<cost){alert("Not enough coins");return}
+if(coins<cost){
+alert("Not enough coins")
+return
+}
 
 coins-=cost
 
-if(type==="auto")auto++
-if(type==="multi")multi*=2
+if(type==="auto"){
+auto++
+}
+
+if(type==="multi"){
+multi*=2
+}
 
 await db.from("users").update({
 coins:coins,
@@ -277,11 +282,11 @@ const {data}=await db
 .eq("id",user.id)
 .single()
 
-let last=data.last_daily
+let last=data?.last_daily
 
 if(last && Date.now()-new Date(last)<86400000){
 
-alert("already claimed")
+alert("Daily already claimed")
 
 return
 }
@@ -298,6 +303,11 @@ updateUI()
 }
 
 async function withdraw(){
+
+if(!wallet.value || !amount.value){
+alert("Enter wallet and amount")
+return
+}
 
 await db.from("withdrawals").insert({
 user_id:user.id,
@@ -322,13 +332,16 @@ console.log(error)
 return
 }
 
-if(!data){
+leaderboard.innerHTML=""
+
+if(!data || data.length===0){
 leaderboard.innerHTML="No miners yet"
 return
 }
 
 data.forEach(u=>{
-leaderboard.innerHTML+=`<p>${Number(u.coins||0).toFixed(3)} VEXA</p>`
+leaderboard.innerHTML+=
+`<p>${Number(u.coins||0).toFixed(3)} VEXA</p>`
 })
 
 }
@@ -339,7 +352,9 @@ await db.auth.signOut()
 
 location.reload()
 
-(async()=>{
+}
+
+async function restoreSession(){
 
 const {data:{session}}=await db.auth.getSession()
 
@@ -354,7 +369,9 @@ loadUser()
 
 }
 
-})()
+}
+
+restoreSession()
 
 </script>
 
