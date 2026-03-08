@@ -1,681 +1,196 @@
-<!-- ===================================================== -->
-<!-- VEXA COIN (VEX) ULTIMATE TIMER MINING APP             -->
-<!-- Full Single File Web App                              -->
-<!-- Version: Ultimate UI                                  -->
-<!-- ===================================================== -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>VEX - Vexa Coin Mining</title>
-
-<!-- GOOGLE FONT -->
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-<!-- ===================================================== -->
-<!-- STYLES                                               -->
-<!-- ===================================================== -->
-
+<title>VEX - Vexa Coin Ultimate</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-
-/* ===================================================== */
-/* GLOBAL                                                */
-/* ===================================================== */
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:'Poppins',sans-serif;
-}
-
-body{
-background:#0b0f1a;
-color:white;
-height:100vh;
-}
-
-/* ===================================================== */
-/* LOGIN PAGE                                            */
-/* ===================================================== */
-
-#authPage{
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-background:linear-gradient(135deg,#0f172a,#020617);
-}
-
-.authBox{
-width:380px;
-padding:40px;
-background:#111827;
-border-radius:15px;
-box-shadow:0 0 20px rgba(0,0,0,0.6);
-}
-
-.authBox h2{
-text-align:center;
-margin-bottom:25px;
-color:#22c55e;
-}
-
-.inputGroup{
-margin-bottom:18px;
-}
-
-.inputGroup label{
-display:block;
-font-size:14px;
-margin-bottom:6px;
-}
-
-.inputGroup input{
-width:100%;
-padding:10px;
-border:none;
-border-radius:6px;
-background:#1f2937;
-color:white;
-}
-
-.authBtn{
-width:100%;
-padding:12px;
-background:#22c55e;
-border:none;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-}
-
-.switchAuth{
-text-align:center;
-margin-top:12px;
-font-size:13px;
-cursor:pointer;
-color:#60a5fa;
-}
-
-/* ===================================================== */
-/* DASHBOARD                                             */
-/* ===================================================== */
-
-#dashboard{
-display:none;
-height:100vh;
-}
-
-.sidebar{
-width:220px;
-background:#020617;
-height:100%;
-position:fixed;
-padding-top:20px;
-}
-
-.logo{
-text-align:center;
-font-size:22px;
-font-weight:700;
-color:#22c55e;
-margin-bottom:30px;
-}
-
-.navItem{
-padding:14px 20px;
-cursor:pointer;
-color:#cbd5e1;
-}
-
-.navItem:hover{
-background:#111827;
-}
-
-.main{
-margin-left:220px;
-padding:25px;
-}
-
-.topbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:20px;
-}
-
-.balanceCard{
-background:#111827;
-padding:20px;
-border-radius:10px;
-margin-bottom:20px;
-}
-
-.balanceCard h3{
-font-size:14px;
-color:#94a3b8;
-}
-
-.balanceCard h1{
-margin-top:10px;
-color:#22c55e;
-}
-
-/* ===================================================== */
-/* MINING SECTION                                        */
-/* ===================================================== */
-
-.mineBox{
-background:#111827;
-padding:25px;
-border-radius:12px;
-}
-
-.mineBtn{
-margin-top:15px;
-padding:12px 20px;
-background:#22c55e;
-border:none;
-border-radius:8px;
-cursor:pointer;
-font-weight:600;
-}
-
-.progressBar{
-height:10px;
-background:#1f2937;
-border-radius:20px;
-margin-top:15px;
-overflow:hidden;
-}
-
-.progress{
-height:100%;
-width:0%;
-background:#22c55e;
-}
-
-/* ===================================================== */
-/* TABLE                                                 */
-/* ===================================================== */
-
-.table{
-width:100%;
-margin-top:20px;
-border-collapse:collapse;
-}
-
-.table th{
-text-align:left;
-padding:10px;
-background:#020617;
-}
-
-.table td{
-padding:10px;
-border-bottom:1px solid #1f2937;
-}
-
-/* ===================================================== */
-/* REFERRAL                                              */
-/* ===================================================== */
-
-.refBox{
-background:#111827;
-padding:20px;
-border-radius:10px;
-margin-top:20px;
-}
-
-.copyBtn{
-padding:8px 14px;
-background:#22c55e;
-border:none;
-border-radius:6px;
-margin-top:10px;
-cursor:pointer;
-}
-
-/* ===================================================== */
-/* WITHDRAW                                              */
-/* ===================================================== */
-
-.withdrawBox{
-background:#111827;
-padding:20px;
-border-radius:10px;
-margin-top:20px;
-}
-
-.withdrawBox input{
-width:100%;
-padding:10px;
-margin-top:8px;
-margin-bottom:10px;
-background:#1f2937;
-border:none;
-color:white;
-}
-
-.withdrawBtn{
-padding:10px;
-background:#22c55e;
-border:none;
-border-radius:8px;
-width:100%;
-cursor:pointer;
-}
-
+/* Global Styles */
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif;}
+body{background:#0b0f1a;color:white;}
+header{display:flex;justify-content:space-between;align-items:center;padding:15px 25px;background:#121826;border-bottom:1px solid #1f2937;}
+.logo{font-size:22px;font-weight:700;color:#22c55e;}
+.user{display:flex;gap:10px;align-items:center;}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(45deg,#22c55e,#3b82f6);display:flex;align-items:center;justify-content:center;font-weight:bold;}
+.container{max-width:1200px;margin:auto;padding:25px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;}
+.card{background:#121826;border-radius:12px;padding:20px;border:1px solid #1f2937;}
+.balance{font-size:36px;font-weight:bold;}
+button{background:#22c55e;border:none;padding:12px 18px;border-radius:8px;cursor:pointer;font-weight:600;}
+input{width:100%;padding:10px;border-radius:8px;border:none;margin-top:10px;background:#1f2937;color:white;}
+.timer{font-size:18px;color:#22c55e;margin-top:10px;}
+.auth{max-width:400px;margin:100px auto;display:flex;flex-direction:column;gap:15px;}
+.auth input{width:100%;padding:10px;border-radius:8px;border:none;background:#1f2937;color:white;}
+.auth button{width:100%;padding:12px;background:#22c55e;border:none;border-radius:8px;cursor:pointer;font-weight:600;}
+.switchAuth{text-align:center;color:#60a5fa;cursor:pointer;margin-top:10px;font-size:13px;}
+.progressBar{height:10px;background:#1f2937;border-radius:20px;margin-top:15px;overflow:hidden;}
+.progress{height:100%;width:0%;background:#22c55e;}
+.table{width:100%;margin-top:20px;border-collapse:collapse;}
+.table th{text-align:left;padding:10px;background:#020617;}
+.table td{padding:10px;border-bottom:1px solid #1f2937;}
+.copyBtn{padding:8px 14px;background:#22c55e;border:none;border-radius:6px;margin-top:10px;cursor:pointer;}
 </style>
 </head>
-
 <body>
 
-<!-- ===================================================== -->
-<!-- AUTH PAGE                                             -->
-<!-- ===================================================== -->
-
-<div id="authPage">
-
-<div class="authBox">
-
-<h2>VEX Login</h2>
-
-<div class="inputGroup">
-<label>Email</label>
-<input id="email">
+<!-- AUTH -->
+<div id="authPage" class="auth card">
+<h2>VEX Login / Signup</h2>
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<button onclick="signup()">Signup</button>
+<div class="switchAuth" onclick="switchAuth()">Switch</div>
+<p id="authMsg" style="color:#f87171;text-align:center;margin-top:5px;"></p>
 </div>
 
-<div class="inputGroup">
-<label>Password</label>
-<input id="password" type="password">
-</div>
-
-<button class="authBtn" onclick="login()">Login</button>
-
-<div class="switchAuth" onclick="register()">Create Account</div>
-
-</div>
-
-</div>
-
-<!-- ===================================================== -->
-<!-- DASHBOARD                                             -->
-<!-- ===================================================== -->
-
-<div id="dashboard">
-
-<div class="sidebar">
-
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none">
+<header>
 <div class="logo">VEX</div>
-
-<div class="navItem">Dashboard</div>
-<div class="navItem">Mining</div>
-<div class="navItem">Referrals</div>
-<div class="navItem">Withdraw</div>
-<div class="navItem" onclick="logout()">Logout</div>
-
+<div class="user">
+<div class="avatar" id="avatar"></div>
+<div id="username"></div>
+<button onclick="logout()">Logout</button>
 </div>
-
-<div class="main">
-
-<div class="topbar">
-<h2>Dashboard</h2>
-<div id="userEmail"></div>
+</header>
+<div class="container">
+<div class="grid">
+<div class="card">
+<h3>Balance</h3>
+<div class="balance" id="balance">0</div>
+<p>VEXA Coin</p>
 </div>
-
-<!-- BALANCE -->
-
-<div class="balanceCard">
-
-<h3>Your Balance</h3>
-
-<h1 id="balance">0 VEX</h1>
-
+<div class="card">
+<h3>Mining</h3>
+<button class="mineBtn" id="mineBtn" onclick="startMining()">Start Mining</button>
+<div class="progressBar"><div class="progress" id="progress"></div></div>
+<p class="timer" id="mineTimer">Not mining</p>
 </div>
-
-<!-- MINING -->
-
-<div class="mineBox">
-
-<h3>24H Mining Session</h3>
-
-<button class="mineBtn" onclick="startMining()">Start Mining</button>
-
-<div class="progressBar">
-<div class="progress" id="progress"></div>
+<div class="card">
+<h3>Level & XP</h3>
+<p>Level: <span id="level">1</span></p>
+<p>XP: <span id="xp">0</span></p>
 </div>
-
-<p id="mineStatus">Not mining</p>
-
-</div>
-
-<!-- REFERRAL -->
-
-<div class="refBox">
-
-<h3>Your Referral Code</h3>
-
+<div class="card">
+<h3>Referral Code</h3>
 <p id="refCode"></p>
-
 <button class="copyBtn" onclick="copyRef()">Copy</button>
-
 </div>
-
-<!-- WITHDRAW -->
-
-<div class="withdrawBox">
-
-<h3>Withdraw VEX</h3>
-
+<div class="card">
+<h3>Withdraw</h3>
 <input id="wallet" placeholder="Wallet Address">
-
 <input id="amount" placeholder="Amount">
-
-<button class="withdrawBtn" onclick="withdraw()">Request Withdraw</button>
-
+<button onclick="withdraw()">Request Withdraw</button>
 </div>
-
-<!-- LEADERBOARD -->
-
-<table class="table">
-
-<thead>
-<tr>
-<th>User</th>
-<th>Balance</th>
-</tr>
-</thead>
-
-<tbody id="leaderboard"></tbody>
-
-</table>
-
+<div class="card">
+<h3>Leaderboard</h3>
+<table class="table"><thead><tr><th>User</th><th>Balance</th></tr></thead><tbody id="leaderboard"></tbody></table>
 </div>
 </div>
-
-<!-- ===================================================== -->
-<!-- JAVASCRIPT                                           -->
-<!-- ===================================================== -->
+</div>
+</div>
 
 <script>
+const SUPABASE_URL="https://kdmknilstonmiesjocvy.supabase.co";
+const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let user = null;
+let coins=0,xp=0,level=1,lastMine=null;
 
-/* ===================================================== */
-/* LOCAL DATABASE                                        */
-/* ===================================================== */
-
-let users = JSON.parse(localStorage.getItem("vex_users")) || []
-
-let currentUser = null
-
-/* ===================================================== */
-/* REGISTER                                              */
-/* ===================================================== */
-
-function register(){
-
-let email = document.getElementById("email").value
-let password = document.getElementById("password").value
-
-if(!email || !password){
-alert("Fill fields")
-return
+async function signup(){
+  const {data,error}=await db.auth.signUp({email:email.value,password:password.value});
+  if(error){authMsg.innerText=error.message;return;}
+  const code=Math.random().toString(36).substring(2,8);
+  await db.from('users').insert({id:data.user.id,coins:0,xp:0,level:1,refcode:code});
+  authMsg.innerText='Account created, please login';
 }
 
-let user = {
-
-email:email,
-password:password,
-balance:0,
-lastMine:0,
-ref:Math.random().toString(36).substring(2,8)
-
+async function login(){
+  const {data,error}=await db.auth.signInWithPassword({email:email.value,password:password.value});
+  if(error){authMsg.innerText=error.message;return;}
+  user=data.user;
+  authPage.style.display='none';
+  dashboard.style.display='block';
+  avatar.innerText=user.email[0].toUpperCase();
+  username.innerText=user.email.split('@')[0];
+  loadUser();
+  setInterval(updateTimer,1000);
 }
 
-users.push(user)
-
-localStorage.setItem("vex_users",JSON.stringify(users))
-
-alert("Account created")
-
+async function loadUser(){
+  const {data}=await db.from('users').select('*').eq('id',user.id).single();
+  if(!data){
+    const code=Math.random().toString(36).substring(2,8);
+    await db.from('users').insert({id:user.id,coins:0,xp:0,level:1,refcode:code});
+  } else {
+    coins=Number(data.coins);
+    xp=Number(data.xp);
+    level=Number(data.level);
+    lastMine=data.last_mine;
+    refCode.innerText=data.refcode;
+    document.getElementById('balance').innerText=coins;
+    document.getElementById('xp').innerText=xp;
+    document.getElementById('level').innerText=level;
+  }
+  updateLeaderboard();
 }
 
-/* ===================================================== */
-/* LOGIN                                                 */
-/* ===================================================== */
-
-function login(){
-
-let email=document.getElementById("email").value
-let password=document.getElementById("password").value
-
-let user=users.find(u=>u.email===email && u.password===password)
-
-if(!user){
-
-alert("Invalid login")
-return
-
+async function startMining(){
+  const now=new Date();
+  if(lastMine){
+    const diff=(now-new Date(lastMine))/1000;
+    if(diff<86400){alert('Mining already in cooldown');return;}
+  }
+  lastMine=now;
+  coins+=1;
+  xp+=10;
+  await db.from('users').update({coins,xp,last_mine:lastMine}).eq('id',user.id);
+  document.getElementById('balance').innerText=coins;
+  document.getElementById('xp').innerText=xp;
+  document.getElementById('mineTimer').innerText='Mining complete';
+  updateLeaderboard();
 }
 
-currentUser=user
-
-document.getElementById("authPage").style.display="none"
-document.getElementById("dashboard").style.display="block"
-
-loadDashboard()
-
+function updateTimer(){
+  if(!lastMine){mineTimer.innerText='Ready';return;}
+  const now=new Date();
+  const diff=86400-((now-new Date(lastMine))/1000);
+  if(diff<0){mineTimer.innerText='Ready';return;}
+  const h=Math.floor(diff/3600);
+  const m=Math.floor((diff%3600)/60);
+  const s=Math.floor(diff%60);
+  mineTimer.innerText=`${h}h ${m}m ${s}s`;
 }
 
-/* ===================================================== */
-/* DASHBOARD LOAD                                        */
-/* ===================================================== */
-
-function loadDashboard(){
-
-document.getElementById("userEmail").innerText=currentUser.email
-
-updateBalance()
-
-document.getElementById("refCode").innerText=currentUser.ref
-
-updateLeaderboard()
-
-checkMining()
-
+async function copyRef(){
+  await navigator.clipboard.writeText(refCode.innerText);
+  alert('Copied');
 }
 
-/* ===================================================== */
-/* UPDATE BALANCE                                        */
-/* ===================================================== */
-
-function updateBalance(){
-
-document.getElementById("balance").innerText=currentUser.balance+" VEX"
-
-saveUsers()
-
+async function withdraw(){
+  const amt=parseFloat(amount.value);
+  if(amt>coins){alert('Not enough balance');return;}
+  coins-=amt;
+  await db.from('users').update({coins}).eq('id',user.id);
+  await db.from('withdrawals').insert({user_id:user.id,amount:amt,wallet:wallet.value});
+  document.getElementById('balance').innerText=coins;
+  alert('Withdrawal requested');
 }
 
-/* ===================================================== */
-/* SAVE USERS                                            */
-/* ===================================================== */
-
-function saveUsers(){
-
-localStorage.setItem("vex_users",JSON.stringify(users))
-
+async function updateLeaderboard(){
+  const {data}=await db.from('users').select('email,coins').order('coins',{ascending:false}).limit(10);
+  leaderboard.innerHTML='';
+  data.forEach(u=>{let tr=document.createElement('tr');tr.innerHTML=`<td>${u.email}</td><td>${u.coins}</td>`;leaderboard.appendChild(tr);});
 }
 
-/* ===================================================== */
-/* START MINING                                          */
-/* ===================================================== */
-
-function startMining(){
-
-let now=Date.now()
-
-let last=currentUser.lastMine || 0
-
-let diff=now-last
-
-let hours=24*60*60*1000
-
-if(diff<hours){
-
-alert("Mining session already active")
-
-return
-
+async function logout(){
+  await db.auth.signOut();
+  location.reload();
 }
 
-currentUser.lastMine=now
-
-saveUsers()
-
-mineTimer()
-
-}
-
-/* ===================================================== */
-/* MINING TIMER                                          */
-/* ===================================================== */
-
-function mineTimer(){
-
-let duration=24*60*60*1000
-
-let start=currentUser.lastMine
-
-let interval=setInterval(()=>{
-
-let now=Date.now()
-
-let progress=(now-start)/duration*100
-
-document.getElementById("progress").style.width=progress+"%"
-
-let remaining=duration-(now-start)
-
-if(remaining<0){
-
-clearInterval(interval)
-
-currentUser.balance+=1
-
-updateBalance()
-
-document.getElementById("mineStatus").innerText="Mining complete"
-
-}
-
-},1000)
-
-}
-
-/* ===================================================== */
-/* CHECK MINING                                          */
-/* ===================================================== */
-
-function checkMining(){
-
-if(!currentUser.lastMine)return
-
-let now=Date.now()
-
-let diff=now-currentUser.lastMine
-
-let duration=24*60*60*1000
-
-if(diff<duration){
-
-mineTimer()
-
-}
-
-}
-
-/* ===================================================== */
-/* COPY REF                                              */
-/* ===================================================== */
-
-function copyRef(){
-
-navigator.clipboard.writeText(currentUser.ref)
-
-alert("Copied")
-
-}
-
-/* ===================================================== */
-/* WITHDRAW                                              */
-/* ===================================================== */
-
-function withdraw(){
-
-let amount=parseFloat(document.getElementById("amount").value)
-
-if(amount>currentUser.balance){
-
-alert("Not enough balance")
-
-return
-
-}
-
-currentUser.balance-=amount
-
-updateBalance()
-
-alert("Withdraw request sent")
-
-}
-
-/* ===================================================== */
-/* LEADERBOARD                                           */
-/* ===================================================== */
-
-function updateLeaderboard(){
-
-let sorted=[...users].sort((a,b)=>b.balance-a.balance)
-
-let html=""
-
-sorted.slice(0,10).forEach(u=>{
-
-html+=`
-
-<tr>
-
-<td>${u.email}</td>
-
-<td>${u.balance} VEX</td>
-
-</tr>
-
-`
-
-})
-
-document.getElementById("leaderboard").innerHTML=html
-
-}
-
-/* ===================================================== */
-/* LOGOUT                                                */
-/* ===================================================== */
-
-function logout(){
-
-location.reload()
-
-}
-
+function switchAuth(){email.value='';password.value='';authMsg.innerText='';}
 </script>
-
 </body>
 </html>
