@@ -2,225 +2,123 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VEXA Mining Elite Pro</title>
+<title>VEXA Mining Pro</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+/* --- Base Styles --- */
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg,#0f172a,#020617);
-    color: white;
-    overflow-x: hidden;
+  margin:0;
+  font-family: Arial,sans-serif;
+  background: linear-gradient(135deg,#0f172a,#020617);
+  color:white;
+  transition: all 0.3s ease;
 }
-.auth, .dashboard {
-    max-width: 450px;
-    margin: 60px auto;
-    background: #111827;
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 0 40px rgba(0,255,255,.2);
+body.light {
+  background: linear-gradient(135deg,#e0e7ff,#fef3c7);
+  color:#111827;
 }
-h1 { text-align: center; color: #22d3ee; }
+.auth,.dashboard {
+  max-width:450px;
+  margin:60px auto;
+  background:#111827;
+  padding:30px;
+  border-radius:15px;
+  box-shadow:0 0 40px rgba(0,255,255,.2);
+  transition: all 0.3s ease;
+}
+body.light .auth,.body.light .dashboard { background:#f3f4f6; color:#111827; box-shadow:0 0 30px rgba(0,0,0,.1);}
+h1{text-align:center;color:#22d3ee;}
+body.light h1 { color:#3b82f6;}
 input {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    border: none;
-    border-radius: 8px;
-    background: #1f2937;
-    color: white;
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  border:none;
+  border-radius:8px;
+  background:#1f2937;
+  color:white;
 }
+body.light input { background:#e5e7eb; color:#111827;}
 button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 12px;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.2s;
+  width:100%;
+  padding:12px;
+  margin-top:12px;
+  border:none;
+  border-radius:8px;
+  font-weight:bold;
+  cursor:pointer;
+  transition: all 0.2s ease;
 }
-button:hover { opacity: 0.85; }
-.dashboard { display: none; }
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-.profile { display: flex; align-items: center; }
-.profile-badge {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: linear-gradient(135deg,#22d3ee,#0bc5ea);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    margin-right: 10px;
-    font-size: 20px;
-}
-.username { font-weight: bold; color: #22d3ee; }
+button:hover{opacity:0.85;}
+button:active{transform:scale(0.97);box-shadow:0 0 15px rgba(255,255,255,0.2);}
+.dashboard{display:none;}
 
-.balanceCard {
-    background: #111827;
-    padding: 15px 20px;
-    border-radius: 12px;
-    font-size: 20px;
-    box-shadow: 0 0 20px rgba(0,255,255,.15);
-    margin-bottom: 15px;
-}
+/* --- Navbar & Profile --- */
+.navbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+.profile { display:flex; align-items:center; }
+.profile-badge { width:50px; height:50px; border-radius:50%; background: linear-gradient(135deg,#22d3ee,#0bc5ea); display:flex; justify-content:center; align-items:center; font-weight:bold; margin-right:10px; font-size:20px; color:white; transition: all 0.3s ease;}
+body.light .profile-badge { background: linear-gradient(135deg,#3b82f6,#60a5fa);}
+.username { font-weight:bold; color:#22d3ee; }
+body.light .username { color:#3b82f6; }
 
-.mineBtn {
-    width: 100%;
-    padding: 18px;
-    font-size: 18px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(90deg,#22d3ee,#0bc5ea);
-    cursor: pointer;
-    box-shadow: 0 0 25px #22d3ee;
-    margin-bottom: 20px;
-}
+/* --- Cards & Buttons --- */
+.balanceCard { background:#111827; padding:15px 20px; border-radius:12px; font-size:20px; box-shadow:0 0 20px rgba(0,255,255,.15); margin-bottom:15px; transition: all 0.3s ease;}
+body.light .balanceCard { background:#e5e7eb; color:#111827;}
+.mineBtn { width:100%; padding:18px; font-size:18px; border-radius:12px; background:linear-gradient(90deg,#22d3ee,#0bc5ea); cursor:pointer; box-shadow:0 0 25px #22d3ee; margin-bottom:20px; }
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.card { background:#111827; padding:20px; border-radius:12px; transition: all 0.3s ease;}
+body.light .card { background:#e5e7eb; color:#111827;}
+.card h3{margin-top:0;}
+.upgrade-btn{background:linear-gradient(90deg,#22d3ee,#0bc5ea); margin-top:8px;}
+.daily-btn{background:linear-gradient(90deg,#facc15,#f59e0b);}
+.withdraw-btn{background:linear-gradient(90deg,#ef4444,#dc2626);}
+.store-btn{background:linear-gradient(90deg,#a855f7,#7e22ce);}
+#leaderboard p{margin:4px 0;font-size:14px;}
+.logout{margin-top:20px;background:#ef4444;}
 
-/* Progress bar */
-.progress-container {
-    width: 100%;
-    background: #1f2937;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 20px;
-    box-shadow: inset 0 0 10px rgba(0,255,255,.2);
-    height: 25px;
-}
-.progress-bar {
-    width: 0%;
-    height: 100%;
-    background: linear-gradient(90deg,#22d3ee,#0bc5ea);
-    text-align: center;
-    color: black;
-    font-weight: bold;
-    transition: width 0.5s ease;
-}
+/* --- Progress Bars --- */
+.progress-container{width:100%;background:#1f2937;border-radius:12px;overflow:hidden;margin-bottom:20px;box-shadow:inset 0 0 10px rgba(0,255,255,.2);height:25px;}
+body.light .progress-container{background:#e5e7eb;}
+.progress-bar{width:0%;height:100%;background:linear-gradient(90deg,#22d3ee,#0bc5ea);text-align:center;color:black;font-weight:bold;transition:width 0.6s ease,background 0.4s ease;}
+#xp-bar{background:linear-gradient(90deg,#f472b6,#ec4899); height:100%; font-size:12px; line-height:25px; font-weight:bold; text-align:center; color:white;}
 
-/* XP Bar */
-#xp-bar {
-    background: linear-gradient(90deg,#f472b6,#ec4899);
-    color: black;
-    height: 100%;
-    font-size: 12px;
-    line-height: 15px;
-    font-weight: bold;
-    text-align: center;
-}
+/* --- Coin Drop --- */
+.coin{position:absolute;width:25px;height:25px;background:radial-gradient(circle,#facc15 0%,#f59e0b 100%);border-radius:50%;pointer-events:none;animation:drop 1s cubic-bezier(0.4,0,0.2,1) forwards;}
+@keyframes drop {0%{transform:translateY(0) scale(1);opacity:1;}50%{transform:translateY(-10px) scale(1.1);opacity:0.9;}100%{transform:translateY(200px) scale(0.5);opacity:0;}}
 
-/* Card layout */
-.grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-.card {
-    background: #111827;
-    padding: 20px;
-    border-radius: 12px;
-}
-.card h3 { margin-top: 0; }
-.upgrade-btn { background: linear-gradient(90deg,#22d3ee,#0bc5ea); margin-top:8px; }
-.daily-btn { background: linear-gradient(90deg,#facc15,#f59e0b); }
-.withdraw-btn { background: linear-gradient(90deg,#ef4444,#dc2626); }
-#leaderboard p { margin: 4px 0; font-size: 14px; }
-.logout { margin-top: 20px; background: #ef4444; }
+/* --- Popups --- */
+.level-up-popup, #streak-popup{position:fixed;top:20%;left:50%;transform:translate(-50%,-50%) scale(0.8);background:linear-gradient(135deg,#22d3ee,#0bc5ea);color:black;padding:20px 30px;border-radius:15px;font-weight:bold;font-size:20px;text-align:center;box-shadow:0 0 30px rgba(0,255,255,.3);display:none;opacity:0;z-index:1000;transition:transform 0.3s ease, opacity 0.3s ease;}
+#streak-popup{background:linear-gradient(135deg,#facc15,#f59e0b);}
 
-/* Coin drop animation */
-.coin {
-    position: absolute;
-    width: 25px;
-    height: 25px;
-    background: radial-gradient(circle, #facc15 0%, #f59e0b 100%);
-    border-radius: 50%;
-    pointer-events: none;
-    animation: drop 1s linear forwards;
-}
-@keyframes drop {
-    0% { transform: translateY(0) scale(1); opacity:1; }
-    50% { transform: translateY(-10px) scale(1.1); opacity:0.9; }
-    100% { transform: translateY(200px) scale(0.5); opacity:0; }
-}
+/* --- Streak Flames --- */
+.streak-container{text-align:center;margin-bottom:15px;font-size:16px;font-weight:bold;color:#facc15;}
+.flames{display:inline-block;margin-left:10px;position:relative;width:60px;height:25px;}
+.flame{position:absolute;bottom:0;width:12px;height:12px;background:radial-gradient(circle,#facc15 0%,#f59e0b 100%);border-radius:50%;animation:flame-rise 1s linear infinite;opacity:0.8;}
+@keyframes flame-rise{0%{transform:translateY(0) scale(1);opacity:0.8;}50%{transform:translateY(-15px) scale(1.2);opacity:1;}100%{transform:translateY(-30px) scale(0.8);opacity:0;}}
 
-/* Level up popup */
-.level-up-popup {
-    position: fixed;
-    top: 20%;
-    left: 50%;
-    transform: translate(-50%,-50%);
-    background: linear-gradient(135deg,#22d3ee,#0bc5ea);
-    color: black;
-    padding: 20px 30px;
-    border-radius: 15px;
-    font-weight: bold;
-    font-size: 20px;
-    text-align: center;
-    box-shadow: 0 0 30px rgba(0,255,255,.3);
-    display: none;
-    z-index: 1000;
-}
+/* --- Theme toggle --- */
+#theme-toggle{margin-right:10px;padding:8px 12px;border-radius:8px;background:linear-gradient(90deg,#22d3ee,#0bc5ea);color:black;font-weight:bold;cursor:pointer;transition:all 0.3s ease;}
+#theme-toggle:hover{opacity:0.9;}
 
-/* Streak flames */
-.streak-container {
-    text-align: center;
-    margin-bottom: 15px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #facc15;
-}
-.flames {
-    display: inline-block;
-    margin-left: 10px;
-    position: relative;
-    width: 60px;
-    height: 25px;
-}
-.flame {
-    position: absolute;
-    bottom: 0;
-    width: 12px;
-    height: 12px;
-    background: radial-gradient(circle, #facc15 0%, #f59e0b 100%);
-    border-radius: 50%;
-    animation: flame-rise 1s linear infinite;
-    opacity: 0.8;
-}
-@keyframes flame-rise {
-    0% { transform: translateY(0) scale(1); opacity:0.8; }
-    50% { transform: translateY(-15px) scale(1.2); opacity:1; }
-    100% { transform: translateY(-30px) scale(0.8); opacity:0; }
-}
-#streak-popup {
-    position: fixed;
-    top: 25%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: black;
-    padding: 15px 25px;
-    border-radius: 15px;
-    font-weight: bold;
-    font-size: 18px;
-    text-align: center;
-    box-shadow: 0 0 30px rgba(250,205,21,.5);
-    display: none;
-    z-index: 1000;
+/* --- Mobile --- */
+@media(max-width:480px){
+.auth,.dashboard{margin:20px 10px;padding:20px;width:auto;}
+.grid{grid-template-columns:1fr;gap:15px;}
+.balanceCard,.card{font-size:16px;padding:15px;}
+.mineBtn{font-size:18px;padding:20px;border-radius:15px;}
+.progress-container{height:20px;}
+#xp-bar{font-size:10px;}
 }
 </style>
 </head>
+
 <body>
 
-<!-- LOGIN -->
+<!-- --- LOGIN --- -->
 <div id="auth" class="auth">
-<h1>VEXA Mining Elite</h1>
+<h1>VEXA Mining Pro</h1>
 <input id="email" placeholder="Email">
 <input id="password" type="password" placeholder="Password">
 <input id="refInput" placeholder="Referral Code (optional)">
@@ -229,15 +127,18 @@ button:hover { opacity: 0.85; }
 <p id="msg"></p>
 </div>
 
-<!-- DASHBOARD -->
+<!-- --- DASHBOARD --- -->
 <div id="dashboard" class="dashboard">
 
 <div class="navbar">
-    <div class="profile">
-        <div class="profile-badge" id="profile-badge">U</div>
-        <div class="username" id="username">User</div>
-    </div>
+  <div class="profile">
+    <div class="profile-badge" id="profile-badge">U</div>
+    <div class="username" id="username">User</div>
+  </div>
+  <div>
+    <button id="theme-toggle">🌙</button>
     <button onclick="logout()" class="logout">Logout</button>
+  </div>
 </div>
 
 <div class="balanceCard">Balance: <b id="balance">0</b> VEXA</div>
@@ -267,6 +168,8 @@ button:hover { opacity: 0.85; }
 <h3>Upgrades</h3>
 <button class="upgrade-btn" onclick="upgradeAuto()">Auto Power +1 (10)</button>
 <button class="upgrade-btn" onclick="upgradeMulti()">Multiplier x2 (25)</button>
+<button class="store-btn" onclick="buyBoost('x2',50,3600)">Buy x2 Boost 1h (50)</button>
+<button class="store-btn" onclick="buyBoost('x3',120,10800)">Buy x3 Boost 3h (120)</button>
 </div>
 
 <div class="card">
@@ -290,78 +193,53 @@ button:hover { opacity: 0.85; }
 
 <!-- Popups -->
 <div id="level-up-popup" class="level-up-popup">Level Up!</div>
-<div id="streak-popup" class="level-up-popup" style="background: linear-gradient(135deg,#facc15,#f59e0b);">Streak Bonus!</div>
+<div id="streak-popup" class="level-up-popup">Streak Bonus!</div>
 
 <script>
+// --- Supabase ---
 const SUPABASE_URL="https://kdmknilstonmiesjocvy.supabase.co";
 const SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE";
-const db = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+// --- Variables ---
 let user=null, coins=0, auto=1, multi=1, mining=false, mineInterval=null, progress=0;
 let level=1, xp=0, xpNeeded=10, streak=0, miningCount=0;
+let activeBoost=1, boostTimeout=null;
 
+// --- Helpers ---
 function randomCode(){ return Math.random().toString(36).substring(2,8); }
-
-async function signup(){
-    const { data, error } = await db.auth.signUp({email: email.value, password: password.value});
-    if(error){ msg.innerText = error.message; return; }
-    await db.from("users").insert({id:data.user.id,coins:0,auto_power:1,multiplier:1,referral_code:randomCode(),referred_by:refInput.value||null,level:1,xp:0,streak:0});
-    msg.innerText="Account created!";
-}
-
-async function login(){
-    const { data, error } = await db.auth.signInWithPassword({email: email.value, password: password.value});
-    if(error){ msg.innerText=error.message; return; }
-    if(!data.user){ msg.innerText="Login failed!"; return; }
-    user=data.user; auth.style.display="none"; dashboard.style.display="block"; loadUser();
-}
-
-async function loadUser(){
-    const { data } = await db.from("users").select("*").eq("id", user.id).single();
-    coins=data.coins||0; auto=data.auto_power||1; multi=data.multiplier||1;
-    level=data.level||1; xp=data.xp||0; streak=data.streak||0;
-    document.getElementById("username").innerText=user.email.split("@")[0];
-    document.getElementById("profile-badge").innerText=user.email[0].toUpperCase();
-    document.getElementById("level").innerText=level;
-    updateUI(); updateXPBar(); updateFlames(); leaderboard();
-}
-
-function updateUI(){ balance.innerText=coins.toFixed(6); rate.innerText=(0.001*auto*multi*60*getStreakMultiplier()).toFixed(6); }
-function updateXPBar(){ let percent=Math.min((xp/xpNeeded)*100,100); const bar=document.getElementById("xp-bar"); bar.style.width=percent+"%"; bar.innerText=Math.floor(percent)+"%"; }
-function updateFlames(){ const flamesContainer=document.getElementById("flames"); flamesContainer.innerHTML=""; let flameCount=Math.min(streak,5); for(let i=0;i<flameCount;i++){ const f=document.createElement("div"); f.className="flame"; f.style.left=(i*12)+"px"; f.style.animationDelay=(i*0.2)+"s"; flamesContainer.appendChild(f); } document.getElementById("streak-count").innerText=streak; }
-
-function dropCoin(){ const coin=document.createElement("div"); coin.className="coin"; coin.style.left=(Math.random()*window.innerWidth*0.8+20)+"px"; document.body.appendChild(coin); setTimeout(()=>{coin.remove();},1000); }
-
+function dropCoin(){ const coin=document.createElement("div"); coin.className="coin"; coin.style.left=(Math.random()*window.innerWidth*0.8+20)+"px"; document.body.appendChild(coin); setTimeout(()=>{coin.remove();},1000);}
 function gainXP(amount){ xp+=amount; while(xp>=xpNeeded){ xp-=xpNeeded; level++; streak++; xpNeeded=Math.floor(xpNeeded*1.5); showLevelUpPopup(); updateFlames(); } updateXPBar(); db.from("users").update({level,xp,streak}).eq("id",user.id); }
-function showLevelUpPopup(){ const popup=document.getElementById("level-up-popup"); popup.innerText=`🎉 Level Up! You are now Level ${level}`; popup.style.display="block"; setTimeout(()=>{popup.style.display="none";},2000); }
-
 function getStreakMultiplier(){ if(streak>=20) return 3; if(streak>=10) return 2; return 1; }
-function addStreakReward(){ streak++; coins+=streak*0.01; updateFlames(); showStreakPopup(streak); db.from("users").update({streak,coins}).eq("id",user.id); }
-function showStreakPopup(streakCount){ const popup=document.getElementById("streak-popup"); popup.innerText=`🔥 Streak Bonus! +${(streakCount*0.01).toFixed(2)} VEXA`; popup.style.display="block"; setTimeout(()=>{ popup.style.display="none"; },2000); }
+function updateUI(){ balance.innerText=coins.toFixed(6); rate.innerText=(0.001*auto*multi*activeBoost*getStreakMultiplier()*60).toFixed(6); document.getElementById("level").innerText=level;}
+function updateXPBar(){ let percent=Math.min((xp/xpNeeded)*100,100); const bar=document.getElementById("xp-bar"); bar.style.width=percent+"%"; bar.innerText=Math.floor(percent)+"%";}
+function updateFlames(){ const flamesContainer=document.getElementById("flames"); flamesContainer.innerHTML=""; let flameCount=Math.min(streak,5); for(let i=0;i<flameCount;i++){ const f=document.createElement("div"); f.className="flame"; f.style.left=(i*12)+"px"; f.style.animationDelay=(i*0.2)+"s"; flamesContainer.appendChild(f);} document.getElementById("streak-count").innerText=streak; }
+function showLevelUpPopup(){ const popup=document.getElementById("level-up-popup"); popup.style.opacity="0"; popup.style.display="block"; popup.style.transform="translate(-50%,-60%) scale(0.8)"; setTimeout(()=>{popup.style.opacity="1"; popup.style.transform="translate(-50%,-50%) scale(1)";},50); setTimeout(()=>{popup.style.opacity="0"; popup.style.transform="translate(-50%,-40%) scale(0.8)"; setTimeout(()=>{popup.style.display="none";},300);},2000);}
+function showStreakPopup(streakCount){ const popup=document.getElementById("streak-popup"); popup.style.opacity="0"; popup.style.display="block"; popup.innerText=`🔥 Streak Bonus! +${(streakCount*0.01*activeBoost).toFixed(2)} VEXA`; setTimeout(()=>{popup.style.opacity="1"; popup.style.transform="translate(-50%,-50%) scale(1)";},50); setTimeout(()=>{popup.style.opacity="0"; popup.style.transform="translate(-50%,-40%) scale(0.8)"; setTimeout(()=>{popup.style.display="none";},300);},2000);}
 
-function startMining(){
-    if(mining) return; mining=true; mineBtn.disabled=true; progress=0;
-    mineInterval=setInterval(async()=>{
-        let streakBoost=getStreakMultiplier();
-        let reward=0.001*auto*multi*streakBoost;
-        coins+=reward; updateUI(); dropCoin(); gainXP(0.1*streakBoost);
-        miningCount++; if(miningCount%5===0){ addStreakReward(); }
-        progress+=0.5; if(progress>100) progress=100;
-        const pb=document.getElementById("progress-bar"); pb.style.width=progress+"%"; pb.innerText=Math.floor(progress)+"%";
-        await db.from("users").update({coins}).eq("id",user.id);
-    },1000);
-}
+// --- Supabase Auth ---
+async function signup(){ const {data,error}=await db.auth.signUp({email:email.value,password:password.value}); if(error){msg.innerText=error.message; return;} await db.from("users").insert({id:data.user.id,coins:0,auto_power:1,multiplier:1,referral_code:randomCode(),referred_by:refInput.value||null,level:1,xp:0,streak:0,vip:false}); msg.innerText="Account created!";}
+async function login(){ const {data,error}=await db.auth.signInWithPassword({email:email.value,password:password.value}); if(error){msg.innerText=error.message; return;} if(!data.user){msg.innerText="Login failed";return;} user=data.user; auth.style.display="none"; dashboard.style.display="block"; loadUser();}
+async function loadUser(){ const {data}=await db.from("users").select("*").eq("id",user.id).single(); coins=data.coins||0; auto=data.auto_power||1; multi=data.multiplier||1; level=data.level||1; xp=data.xp||0; streak=data.streak||0; activeBoost=data.boost_multiplier||1; document.getElementById("username").innerText=user.email.split("@")[0]; document.getElementById("profile-badge").innerText=user.email[0].toUpperCase(); updateUI(); updateXPBar(); updateFlames(); leaderboard();}
 
-async function upgradeAuto(){ if(coins<10){ alert("Need 10 coins"); return; } coins-=10; auto++; await db.from("users").update({coins,auto_power:auto}).eq("id",user.id); updateUI();}
-async function upgradeMulti(){ if(coins<25){ alert("Need 25 coins"); return; } coins-=25; multi*=2; await db.from("users").update({coins,multiplier:multi}).eq("id",user.id); updateUI();}
+// --- Mining Functions ---
+function startMining(){ if(mining) return; mining=true; mineBtn.disabled=true; progress=0; mineInterval=setInterval(async()=>{ let streakBoost=getStreakMultiplier(); let reward=0.001*auto*multi*activeBoost*streakBoost; coins+=reward; updateUI(); dropCoin(); gainXP(0.1*streakBoost); miningCount++; if(miningCount%5===0){ streak++; coins+=streak*0.01*activeBoost; updateFlames(); showStreakPopup(streak); } progress+=0.5; if(progress>100) progress=100; const pb=document.getElementById("progress-bar"); pb.style.width=progress+"%"; pb.innerText=Math.floor(progress)+"%"; await db.from("users").update({coins}).eq("id",user.id); },1000);}
+async function upgradeAuto(){ if(coins<10){alert("Need 10 coins");return;} coins-=10; auto++; await db.from("users").update({coins,auto_power:auto}).eq("id",user.id); updateUI();}
+async function upgradeMulti(){ if(coins<25){alert("Need 25 coins");return;} coins-=25; multi*=2; await db.from("users").update({coins,multiplier:multi}).eq("id",user.id); updateUI();}
+async function daily(){ const {data}=await db.from("users").select("last_daily").eq("id",user.id).single(); let last=new Date(data.last_daily||0); let now=new Date(); if(last && now-last<24*60*60*1000){alert("Daily bonus claimed!");return;} coins+=0.01; await db.from("users").update({coins,last_daily:now.toISOString()}).eq("id",user.id); updateUI();}
+async function withdraw(){ if(!amount.value||!wallet.value){alert("Fill wallet and amount");return;} await db.from("withdrawals").insert({user_id:user.id,amount:amount.value,wallet:wallet.value}); alert("Withdrawal request sent!");}
+async function leaderboard(){ const {data}=await db.from("users").select("coins,email,level").order("coins",{ascending:false}).limit(10); leaderboard.innerHTML=""; if(!data) return; data.forEach(u=>{leaderboard.innerHTML+=`<p>${u.email.split("@")[0]} (Lv${u.level}) — ${Number(u.coins||0).toFixed(3)} VEXA</p>`;});}
 
-async function daily(){ const { data }=await db.from("users").select("last_daily").eq("id",user.id).single(); let last=new Date(data.last_daily||0); let now=new Date(); if(last && now-last<24*60*60*1000){ alert("Daily bonus claimed!"); return; } coins+=0.01; await db.from("users").update({coins,last_daily:now.toISOString()}).eq("id",user.id); updateUI(); }
+// --- Boost Packs ---
+async function buyBoost(type,cost,duration){ if(coins<cost){alert("Not enough coins");return;} coins-=cost; activeBoost=type==='x2'?2:type==='x3'?3:1; updateUI(); if(boostTimeout) clearTimeout(boostTimeout); boostTimeout=setTimeout(()=>{activeBoost=1; updateUI(); alert("Boost expired");},duration*1000); await db.from("users").update({coins,boost_multiplier:activeBoost}).eq("id",user.id);}
 
-async function withdraw(){ if(!amount.value||!wallet.value){ alert("Fill wallet and amount"); return; } await db.from("withdrawals").insert({user_id:user.id,amount:amount.value,wallet:wallet.value}); alert("Withdrawal request sent!"); }
+// --- Logout ---
+async function logout(){ clearInterval(mineInterval); await db.auth.signOut(); location.reload();}
 
-async function leaderboard(){ const { data } = await db.from("users").select("email,coins").order("coins",{ascending:false}).limit(10); leaderboard.innerHTML=""; if(!data) return; data.forEach(u=>{leaderboard.innerHTML+=`<p>${u.email.split("@")[0]} — ${Number(u.coins||0).toFixed(3)} VEXA</p>`;}); }
-
-async function logout(){ clearInterval(mineInterval); await db.auth.signOut(); location.reload(); }
+// --- Theme toggle ---
+const themeToggle=document.getElementById("theme-toggle");
+if(localStorage.getItem("theme")==="light"){ document.body.classList.add("light"); themeToggle.innerText="🌙"; }
+themeToggle.addEventListener("click",()=>{ document.body.classList.toggle("light"); if(document.body.classList.contains("light")){ localStorage.setItem("theme","light"); themeToggle.innerText="🌙"; }else{ localStorage.setItem("theme","dark"); themeToggle.innerText="☀️"; }});
 </script>
 </body>
 </html>
