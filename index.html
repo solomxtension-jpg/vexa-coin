@@ -2,20 +2,19 @@
 
 <html>
 <head>
+
 <meta charset="UTF-8">
 <title>VEXA Mining</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 
-*{box-sizing:border-box}
-
 body{
 margin:0;
 font-family:Arial;
-background:#0f172a;
+background:linear-gradient(135deg,#0f172a,#020617);
 color:white;
 }
 
@@ -25,10 +24,48 @@ margin:auto;
 padding:20px;
 }
 
+.auth{
+max-width:400px;
+margin:120px auto;
+background:#111827;
+padding:30px;
+border-radius:15px;
+box-shadow:0 0 30px rgba(0,255,255,.15);
+}
+
+h1{
+text-align:center;
+color:#22d3ee;
+}
+
+input{
+width:100%;
+padding:12px;
+margin-top:10px;
+border:none;
+border-radius:8px;
+background:#1f2937;
+color:white;
+}
+
+button{
+width:100%;
+padding:12px;
+margin-top:12px;
+border:none;
+border-radius:8px;
+background:#22d3ee;
+font-weight:bold;
+cursor:pointer;
+}
+
+.dashboard{
+display:none;
+}
+
 .header{
 display:flex;
 justify-content:space-between;
-align-items:center;
 margin-bottom:20px;
 }
 
@@ -36,8 +73,20 @@ margin-bottom:20px;
 background:#111827;
 padding:20px;
 border-radius:12px;
-font-size:24px;
+font-size:22px;
 box-shadow:0 0 20px rgba(0,255,255,.15);
+}
+
+.mineBtn{
+width:100%;
+padding:18px;
+font-size:18px;
+border:none;
+border-radius:12px;
+background:#22d3ee;
+cursor:pointer;
+box-shadow:0 0 20px #22d3ee;
+margin-bottom:20px;
 }
 
 .grid{
@@ -50,41 +99,20 @@ gap:20px;
 background:#111827;
 padding:20px;
 border-radius:12px;
-box-shadow:0 0 15px rgba(0,0,0,.5);
 }
 
-.mineBtn{
-width:100%;
-padding:18px;
-font-size:18px;
-background:#22d3ee;
-border:none;
-border-radius:12px;
-cursor:pointer;
-box-shadow:0 0 15px #22d3ee;
+.card h3{
+margin-top:0;
 }
 
-.mineBtn:hover{
-transform:scale(1.03);
+#leaderboard p{
+margin:4px 0;
+font-size:14px;
 }
 
-input{
-width:100%;
-padding:10px;
-margin-top:8px;
-border:none;
-border-radius:6px;
-background:#1f2937;
-color:white;
-}
-
-button{
-margin-top:10px;
-padding:10px;
-border:none;
-border-radius:6px;
-background:#22d3ee;
-cursor:pointer;
+.logout{
+margin-top:20px;
+background:#ef4444;
 }
 
 </style>
@@ -93,9 +121,9 @@ cursor:pointer;
 
 <body>
 
-<div class="container">
+<!-- LOGIN -->
 
-<div id="auth">
+<div id="auth" class="auth">
 
 <h1>VEXA Mining</h1>
 
@@ -103,16 +131,15 @@ cursor:pointer;
 <input id="password" type="password" placeholder="Password">
 <input id="refInput" placeholder="Referral Code (optional)">
 
-<button id="signupBtn">Create Account</button> <button id="loginBtn" class="secondary">Login</button>
+<button onclick="signup()">Create Account</button> <button onclick="login()">Login</button>
 
 <p id="msg"></p>
 
 </div>
 
-<div id="app" class="hidden">
+<!-- DASHBOARD -->
 
-<h1>Dashboard</h1>
-<div class="wrapper">
+<div id="dashboard" class="wrapper dashboard">
 
 <div class="header">
 
@@ -120,8 +147,8 @@ cursor:pointer;
 Balance: <b id="balance">0</b> VEXA
 </div>
 
-<div>
-Rate: <b id="rate"></b>
+<div class="balanceCard">
+Rate: <b id="rate">0</b>
 </div>
 
 </div>
@@ -134,9 +161,7 @@ Rate: <b id="rate"></b>
 
 <h3>Upgrades</h3>
 
-<button onclick="upgradeAuto()">Auto Power +1 (10)</button>
-
-<button onclick="upgradeMulti()">Multiplier x2 (25)</button>
+<button onclick="upgradeAuto()">Auto Power +1 (10)</button> <button onclick="upgradeMulti()">Multiplier x2 (25)</button>
 
 </div>
 
@@ -153,22 +178,21 @@ Rate: <b id="rate"></b>
 <h3>Withdraw</h3>
 
 <input id="wallet" placeholder="Wallet">
-
 <input id="amount" placeholder="Amount">
-
-<button onclick="withdraw()">Request</button>
+<button onclick="withdraw()">Request Withdrawal</button>
 
 </div>
 
 <div class="card">
 
 <h3>Leaderboard</h3>
-
 <div id="leaderboard"></div>
 
 </div>
 
 </div>
+
+<button class="logout" onclick="logout()">Logout</button>
 
 </div>
 
@@ -228,8 +252,8 @@ return
 
 user=data.user
 
-auth.classList.add("hidden")
-app.classList.remove("hidden")
+auth.style.display="none"
+dashboard.style.display="block"
 
 loadUser()
 
@@ -247,10 +271,7 @@ coins=data.coins||0
 auto=data.auto_power||1
 multi=data.multiplier||1
 
-refCode.innerText=data.referral_code||""
-
 updateUI()
-
 leaderboard()
 
 }
@@ -258,7 +279,6 @@ leaderboard()
 function updateUI(){
 
 balance.innerText=coins.toFixed(6)
-
 rate.innerText=(0.001*auto*multi).toFixed(6)
 
 }
@@ -275,9 +295,9 @@ let reward=0.001*auto*multi
 
 coins+=reward
 
-await db.from("users").update({
-coins:coins
-}).eq("id",user.id)
+await db.from("users")
+.update({coins:coins})
+.eq("id",user.id)
 
 updateUI()
 
@@ -295,10 +315,9 @@ return
 coins-=10
 auto++
 
-await db.from("users").update({
-coins:coins,
-auto_power:auto
-}).eq("id",user.id)
+await db.from("users")
+.update({coins:coins,auto_power:auto})
+.eq("id",user.id)
 
 updateUI()
 
@@ -314,10 +333,9 @@ return
 coins-=25
 multi*=2
 
-await db.from("users").update({
-coins:coins,
-multiplier:multi
-}).eq("id",user.id)
+await db.from("users")
+.update({coins:coins,multiplier:multi})
+.eq("id",user.id)
 
 updateUI()
 
@@ -327,9 +345,9 @@ async function daily(){
 
 coins+=0.01
 
-await db.from("users").update({
-coins:coins
-}).eq("id",user.id)
+await db.from("users")
+.update({coins:coins})
+.eq("id",user.id)
 
 updateUI()
 
@@ -343,7 +361,7 @@ amount:amount.value,
 wallet:wallet.value
 })
 
-alert("Withdrawal requested")
+alert("Withdrawal request sent")
 
 }
 
@@ -373,15 +391,6 @@ await db.auth.signOut()
 location.reload()
 
 }
-
-document.getElementById("signupBtn").onclick=signup
-document.getElementById("loginBtn").onclick=login
-document.getElementById("mineBtn").onclick=startMining
-document.getElementById("autoBtn").onclick=upgradeAuto
-document.getElementById("multiBtn").onclick=upgradeMulti
-document.getElementById("dailyBtn").onclick=daily
-document.getElementById("withdrawBtn").onclick=withdraw
-document.getElementById("logoutBtn").onclick=logout
 
 </script>
 
