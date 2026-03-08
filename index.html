@@ -1,204 +1,212 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>VEXA Mining Ultimate</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>VEX Dashboard</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
 
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial;
-}
+/* ---------- GLOBAL ---------- */
 
 body{
-background:linear-gradient(135deg,#0f172a,#020617);
+margin:0;
+font-family:Arial;
+background:#0b0f19;
 color:white;
-min-height:100vh;
 }
 
-/* HEADER */
+/* ---------- HEADER ---------- */
 
 header{
 display:flex;
 justify-content:space-between;
 align-items:center;
 padding:15px 25px;
-background:#020617;
-box-shadow:0 0 15px rgba(0,0,0,0.5);
+background:#121826;
+border-bottom:1px solid #1f2937;
 }
 
-.profile{
+.logo{
+font-size:20px;
+font-weight:bold;
+color:#22d3ee;
+}
+
+.user{
 display:flex;
-align-items:center;
 gap:10px;
+align-items:center;
 }
 
 .avatar{
 width:40px;
 height:40px;
 border-radius:50%;
-background:linear-gradient(45deg,#00f2fe,#4facfe);
+background:linear-gradient(45deg,#22d3ee,#3b82f6);
 display:flex;
 align-items:center;
 justify-content:center;
 font-weight:bold;
 }
 
-/* MAIN */
+/* ---------- LAYOUT ---------- */
 
 .container{
-max-width:900px;
+max-width:1200px;
 margin:auto;
-padding:20px;
+padding:25px;
 }
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+gap:20px;
+}
+
+/* ---------- CARDS ---------- */
 
 .card{
-background:rgba(255,255,255,0.05);
-border-radius:15px;
+background:#121826;
+border-radius:12px;
 padding:20px;
-margin-bottom:20px;
-backdrop-filter:blur(10px);
-box-shadow:0 0 20px rgba(0,255,255,0.15);
+border:1px solid #1f2937;
 }
 
-/* BALANCE */
+/* ---------- BALANCE ---------- */
 
 .balance{
 font-size:36px;
 font-weight:bold;
-text-align:center;
 }
 
-/* MINE BUTTON */
+/* ---------- BUTTON ---------- */
 
-.mine-btn{
-width:200px;
-height:200px;
-border-radius:50%;
+button{
+background:#22d3ee;
 border:none;
-background:linear-gradient(45deg,#00f2fe,#4facfe);
-font-size:26px;
-margin:20px auto;
-display:block;
-color:white;
+padding:12px 18px;
+border-radius:8px;
 cursor:pointer;
-box-shadow:0 0 40px rgba(0,255,255,0.6);
-transition:0.2s;
+font-weight:bold;
 }
 
-.mine-btn:hover{
-transform:scale(1.08);
-}
-
-/* PROGRESS */
-
-.progress{
-height:12px;
-background:#1e293b;
-border-radius:10px;
-overflow:hidden;
-margin-top:10px;
-}
-
-.bar{
-height:100%;
-width:0%;
-background:linear-gradient(90deg,#00f2fe,#4facfe);
-}
-
-/* FORMS */
+/* ---------- INPUT ---------- */
 
 input{
 width:100%;
 padding:10px;
-margin-top:10px;
 border-radius:8px;
 border:none;
-}
-
-button{
-padding:10px 15px;
-border:none;
-border-radius:8px;
-cursor:pointer;
 margin-top:10px;
 }
 
-/* LOGIN */
+/* ---------- TIMER ---------- */
+
+.timer{
+font-size:18px;
+color:#22d3ee;
+margin-top:10px;
+}
+
+/* ---------- LOGIN ---------- */
 
 .auth{
 max-width:400px;
-margin:80px auto;
+margin:100px auto;
 }
 
 .leaderboard div{
 display:flex;
 justify-content:space-between;
 padding:6px 0;
-border-bottom:1px solid rgba(255,255,255,0.1);
+border-bottom:1px solid #1f2937;
 }
 
 </style>
+
 </head>
 
 <body>
 
+<!-- LOGIN -->
+
 <div id="auth" class="auth card">
 
-<h2>VEXA Mining</h2>
+<h2>VEX Login</h2>
 
 <input id="email" placeholder="Email">
+
 <input id="password" type="password" placeholder="Password">
 
 <button onclick="login()">Login</button>
-<button onclick="signup()">Sign Up</button>
+
+<button onclick="signup()">Signup</button>
 
 </div>
+
+<!-- DASHBOARD -->
 
 <div id="app" style="display:none">
 
 <header>
 
-<div class="profile">
-<div class="avatar" id="avatar">U</div>
-<div>
+<div class="logo">VEX</div>
+
+<div class="user">
+
+<div class="avatar" id="avatar"></div>
+
 <div id="username"></div>
-<div>Level <span id="level">1</span></div>
-</div>
-</div>
 
 <button onclick="logout()">Logout</button>
+
+</div>
 
 </header>
 
 <div class="container">
 
-<div class="card">
-
-<div class="balance" id="coins">0.000</div>
-
-<button class="mine-btn" onclick="mine()">MINE</button>
-
-<div>XP</div>
-
-<div class="progress">
-<div class="bar" id="xpbar"></div>
-</div>
-
-</div>
+<div class="grid">
 
 <div class="card">
 
-<h3>Daily Reward</h3>
+<h3>Balance</h3>
 
-<button onclick="daily()">Claim</button>
+<div class="balance" id="coins">0</div>
+
+<p>VEXA Coin</p>
+
+</div>
+
+<div class="card">
+
+<h3>Mining</h3>
+
+<button id="mineBtn" onclick="mine()">Start Mining</button>
+
+<div class="timer" id="timer"></div>
+
+</div>
+
+<div class="card">
+
+<h3>Level</h3>
+
+<p>Level <span id="level">1</span></p>
+
+<p>XP <span id="xp">0</span></p>
+
+</div>
+
+<div class="card">
+
+<h3>Referral</h3>
+
+<input id="refcode" readonly>
 
 </div>
 
@@ -207,6 +215,7 @@ border-bottom:1px solid rgba(255,255,255,0.1);
 <h3>Withdraw</h3>
 
 <input id="wallet" placeholder="Wallet">
+
 <input id="amount" placeholder="Amount">
 
 <button onclick="withdraw()">Request</button>
@@ -225,17 +234,20 @@ border-bottom:1px solid rgba(255,255,255,0.1);
 
 </div>
 
+</div>
+
 <script>
 
 const supabaseUrl="https://kdmknilstonmiesjocvy.supabase.co"
-const supabaseKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkbWtuaWxzdG9ubWllc2pvY3Z5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1NzcyNTEsImV4cCI6MjA4ODE1MzI1MX0.ei6PvC3unpAjp-78mTTJxC1d72o3Ap_k6fuvuARbYUE"
+const supabaseKey="PASTE_PUBLIC_ANON_KEY"
 
 const db=supabase.createClient(supabaseUrl,supabaseKey)
 
-let user=null
+let user
 let coins=0
 let xp=0
 let level=1
+let lastMine=null
 
 async function signup(){
 
@@ -260,11 +272,11 @@ if(error) return alert(error.message)
 
 user=data.user
 
-startApp()
+start()
 
 }
 
-async function startApp(){
+async function start(){
 
 auth.style.display="none"
 app.style.display="block"
@@ -273,33 +285,36 @@ avatar.innerText=user.email[0].toUpperCase()
 username.innerText=user.email.split("@")[0]
 
 loadUser()
+
 leaderboard()
+
+setInterval(updateTimer,1000)
 
 }
 
 async function loadUser(){
 
-let {data}=await db
-.from("users")
-.select("*")
-.eq("id",user.id)
-.single()
+let {data}=await db.from("users").select("*").eq("id",user.id).single()
 
 if(!data){
 
+let code=Math.random().toString(36).substring(2,8)
+
 await db.from("users").insert({
-id:user.id
+id:user.id,
+refcode:code
 })
 
-coins=0
-xp=0
-level=1
+refcode.value=code
 
 }else{
 
 coins=Number(data.coins)||0
 xp=Number(data.xp)||0
 level=Number(data.level)||1
+lastMine=data.last_mine
+
+refcode.value=data.refcode
 
 }
 
@@ -309,47 +324,70 @@ updateUI()
 
 function updateUI(){
 
-document.getElementById("coins").innerText=coins.toFixed(3)
+coinsEl.innerText=coins.toFixed(3)
 
-document.getElementById("level").innerText=level
+level.innerText=level
 
-let percent=(xp%100)
-
-xpbar.style.width=percent+"%"
+xp.innerText=xp
 
 }
 
 async function mine(){
 
-coins+=0.001
-xp+=5
+let now=new Date()
 
-if(xp>=level*100){
+if(lastMine){
 
-level++
-alert("Level up!")
+let diff=(now-new Date(lastMine))/1000
 
-}
+if(diff<86400){
 
-updateUI()
+alert("Mining already started")
 
-await db
-.from("users")
-.update({coins,xp,level})
-.eq("id",user.id)
+return
 
 }
 
-async function daily(){
+}
 
-coins+=0.01
+coins+=1
+
+xp+=10
+
+lastMine=new Date()
+
+await db.from("users").update({
+coins,
+xp,
+level,
+last_mine:lastMine
+}).eq("id",user.id)
 
 updateUI()
 
-await db
-.from("users")
-.update({coins})
-.eq("id",user.id)
+}
+
+function updateTimer(){
+
+if(!lastMine) return
+
+let now=new Date()
+
+let diff=86400-((now-new Date(lastMine))/1000)
+
+if(diff<0){
+
+timer.innerText="Ready to mine"
+
+return
+
+}
+
+let h=Math.floor(diff/3600)
+let m=Math.floor((diff%3600)/60)
+let s=Math.floor(diff%60)
+
+timer.innerText=h+"h "+m+"m "+s+"s"
 
 }
 
@@ -357,8 +395,8 @@ async function withdraw(){
 
 await db.from("withdrawals").insert({
 user_id:user.id,
-amount:Number(amount.value),
-wallet:wallet.value
+wallet:wallet.value,
+amount:Number(amount.value)
 })
 
 alert("Withdrawal sent")
@@ -367,8 +405,7 @@ alert("Withdrawal sent")
 
 async function leaderboard(){
 
-const {data}=await db
-.from("users")
+const {data}=await db.from("users")
 .select("coins")
 .order("coins",{ascending:false})
 .limit(10)
@@ -379,7 +416,7 @@ data.forEach((u,i)=>{
 
 let div=document.createElement("div")
 
-div.innerHTML=`<span>#${i+1}</span><span>${Number(u.coins).toFixed(2)}</span>`
+div.innerHTML="#"+(i+1)+" "+Number(u.coins).toFixed(2)
 
 leaderboard.appendChild(div)
 
