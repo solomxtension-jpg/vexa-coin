@@ -86,7 +86,7 @@ font-size:13px;
 
 <div class="stat">Balance: <b id="balance">0</b> VEXA</div>
 
-<div class="stat">Mining Rate: <b id="rate"></b> / min</div>
+<div class="stat">Mining Rate: <b id="rate">1</b> / min</div>
 
 <div class="stat">Your Referral Code:</div>
 <b id="refCode"></b>
@@ -151,7 +151,7 @@ referral_code:randomCode(),
 referred_by:ref
 })
 
-msg.innerText="Account created"
+msg.innerText="Account created successfully"
 
 }
 
@@ -246,7 +246,7 @@ return
 
 await db
 
-alert("Mining started for 24 hours")
+alert()
 
 }
 
@@ -281,7 +281,7 @@ let last=data.last_daily
 
 if(last && Date.now()-new Date(last)<86400000){
 
-alert("Daily already claimed")
+alert("already claimed")
 
 return
 }
@@ -326,8 +326,6 @@ if(!data){
 leaderboard.innerHTML="No miners yet"
 return
 }
-
-leaderboard.innerHTML=""
 
 data.forEach(u=>{
 leaderboard.innerHTML+=`<p>${Number(u.coins||0).toFixed(3)} VEXA</p>`
