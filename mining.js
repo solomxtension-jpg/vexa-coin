@@ -1,26 +1,31 @@
-let progress=0
-
-setInterval(()=>{
-
-progress+=0.05
-
-if(progress>100)progress=0
-
-let offset=565-(565*progress/100)
-
-mineCircle.style.strokeDashoffset=offset
-
-},60000)
-
-
 async function startMining(){
 
-let reward=1
+let now = new Date()
 
-balance+=reward
+let {data:userData} = await db
+.from("users")
+.select("last_mine")
+.eq("id",user.id)
+.single()
 
-document.getElementById("balance").innerText=balance.toFixed(4)
+if(userData.last_mine){
 
-alert("Mining reward added")
+let diff = (now - new Date(userData.last_mine))/1000
+
+if(diff < 86400){
+alert("Mining already active")
+return
+}
+
+}
+
+await db
+.from("users")
+.update({
+last_mine:now
+})
+.eq("id",user.id)
+
+alert("Mining started")
 
 }
