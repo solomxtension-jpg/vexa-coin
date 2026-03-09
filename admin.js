@@ -1,18 +1,21 @@
-async function loadUsers(){
+async function approveWithdraw(id){
 
-let {data}=await db.from("users").select("email,coins")
+await db
+.from("withdrawals")
+.update({status:"approved"})
+.eq("id",id)
 
-adminUsers.innerHTML=""
+alert("Approved")
 
-data.forEach(u=>{
+}
 
-adminUsers.innerHTML+=`
-<tr>
-<td>${u.email}</td>
-<td>${u.coins}</td>
-</tr>
-`
+async function rejectWithdraw(id){
 
-})
+await db
+.from("withdrawals")
+.update({status:"rejected"})
+.eq("id",id)
+
+alert("Rejected")
 
 }
