@@ -1,7 +1,20 @@
-function copyRef(){
+async function loadReferrals(){
 
-navigator.clipboard.writeText(refCode.innerText)
+let {data} = await db
+.from("users")
+.select("email")
+.eq("referred_by",user.refcode)
 
-alert("Copied")
+refUsers.innerHTML=""
+
+data.forEach(u=>{
+
+refUsers.innerHTML+=`
+<tr>
+<td>${u.email}</td>
+</tr>
+`
+
+})
 
 }
